@@ -2,14 +2,20 @@ FROM eclipse-temurin:21-alpine AS builder
 
 WORKDIR /app
 
-COPY mvnw .
-COPY .mvn .mvn
+# Install Maven globally inside the Alpine builder container
+RUN apk add --no-cache maven
+
+# Copy only the project definition first to leverage Docker layer caching
 COPY pom.xml .
 
-RUN ./mvnw dependency:go-offline -B
+# Download dependencies (this layer will be cached unless pom.xml changes)
+RUN mvn dependency:go-offline -B
+
+# Copy the rest of the source code
 COPY src ./src
 
-RUN ./mvnw clean package -DskipTests -B
+# Build the application using global maven
+RUN mvn clean package -DskipTests -B
 
 
 FROM eclipse-temurin:21-jre-alpine
