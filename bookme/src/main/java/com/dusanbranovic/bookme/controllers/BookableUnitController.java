@@ -36,10 +36,19 @@ public class BookableUnitController {
     }
 
     @GetMapping("/{unit_id}")
-    public BookableUnitDetailedCardDTO getUnit(
+    public BookableUnitSummaryDTO getUnit(
+            @PathVariable Long unit_id,
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate
+    ){
+        return bookableUnitService.getUnit(unit_id,startDate,endDate);
+    }
+
+    @GetMapping("/{unit_id}/info")
+    public BookableUnitDetailedCardDTO getUnitInfo(
             @PathVariable Long unit_id
     ){
-        return bookableUnitService.getUnit(unit_id);
+        return bookableUnitService.getUnitInfo(unit_id);
     }
 
     @PostMapping("/{unit_id}/add-price")
@@ -126,4 +135,20 @@ public class BookableUnitController {
     }
 
 
+    @GetMapping("/{unit_id}/addons/{addon_id}/period-prices")
+    public List<PeriodPriceAddonResponseDTO> getPeriodPrices(
+            @PathVariable Long unit_id,
+            @PathVariable Long addon_id
+    ){
+        return addonService.getPeriodPrices(unit_id,addon_id);
+    }
+
+    @GetMapping("/{unit_id}/addons")
+    public List<BookableUnitAddonsResponseDTO> getUnitAddons(
+            @PathVariable Long unit_id,
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate
+    ){
+        return bookableUnitService.getUnitAddons(unit_id,startDate,endDate);
+    }
 }

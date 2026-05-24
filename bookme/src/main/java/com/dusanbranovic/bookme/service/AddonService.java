@@ -4,9 +4,7 @@ import com.dusanbranovic.bookme.dto.requests.AddonRequestDTO;
 import com.dusanbranovic.bookme.dto.requests.AddonToAddRequestDTO;
 import com.dusanbranovic.bookme.dto.requests.BillingTypeRequestDTO;
 import com.dusanbranovic.bookme.dto.requests.PeriodPriceAddonRequestDTO;
-import com.dusanbranovic.bookme.dto.responses.AddonPeriodPriceResponseDTO;
-import com.dusanbranovic.bookme.dto.responses.AddonResponseDTO;
-import com.dusanbranovic.bookme.dto.responses.AddonToAddResponseDTO;
+import com.dusanbranovic.bookme.dto.responses.*;
 import com.dusanbranovic.bookme.exceptions.EntityAlreadyExistsExcpetion;
 import com.dusanbranovic.bookme.exceptions.EntityNotFoundException;
 import com.dusanbranovic.bookme.exceptions.InvalidDateRangeException;
@@ -178,5 +176,36 @@ public class AddonService {
         addonMappingRepository.save(addonMapping);
 
         return addonMapping.isPerNight();
+    }
+
+    public List<PeriodPriceAddonResponseDTO> getPeriodPrices(Long unitId, Long addonId) {
+
+        BookableUnit unit = bookableUnitRepository.findById(unitId).orElseThrow(() -> {
+            log.error("Unit not found");
+            return new EntityNotFoundException("Unit with id " + unitId + " not found");
+        });
+
+        Addon addon = addonRepository.findById(addonId).orElseThrow(() -> {
+            log.error("Addon not found");
+            return new EntityNotFoundException("Addon with id " + addonId + " not found");
+        });
+
+        AddonMapping addonMapping = addonMappingRepository.findByAddonAndUnitID(unitId,addonId).orElseThrow(() ->{
+            log.error("Addon not found in unit");
+            return new EntityNotFoundException("Addon with id " + addonId + " not found in unit with id " + unitId);
+        });
+
+        return addonMapping
+                .getPeriodPriceAddons()
+                .stream()
+                .map(periodPrice ->
+                        new PeriodPriceAddonResponseDTO(
+                                periodPrice.getId(),
+                                periodPrice.getPrice(),
+                                periodPrice.getAddonMapping().isPerNight(),
+                                periodPrice.getStartDate(),
+                                periodPrice.getEndDate())
+                )
+                .collect(Collectors.toList());
     }
 }

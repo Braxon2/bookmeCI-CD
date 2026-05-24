@@ -1,13 +1,18 @@
 package com.dusanbranovic.bookme.auth;
 
 import com.dusanbranovic.bookme.config.JwtService;
+import com.dusanbranovic.bookme.exceptions.EntityNotFoundException;
+import com.dusanbranovic.bookme.exceptions.InvalidCredentialsException;
 import com.dusanbranovic.bookme.models.User;
 import com.dusanbranovic.bookme.models.UserType;
 import com.dusanbranovic.bookme.repository.UserRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 
@@ -61,12 +66,25 @@ public class AuthenticationService {
     public AuthResponse login(AuthLoginRequest loginRequest) {
 
 
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginRequest.getEmail(),loginRequest.getPassword())
-            );
+//            authenticationManager.authenticate(
+//                    new UsernamePasswordAuthenticationToken(loginRequest.getEmail(),loginRequest.getPassword())
+//            );
 
-            var user = userRepository.findByEmail(loginRequest.getEmail())
-                    .orElseThrow();
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
+            );
+        } catch (BadCredentialsException e) {
+            // Translate the Spring Security exception into your custom one
+            throw new InvalidCredentialsException("Incorrect email or password");
+        }
+
+        // Use your existing EntityNotFoundException here as well!
+        var user = userRepository.findByEmail(loginRequest.getEmail())
+                .orElseThrow(() -> new EntityNotFoundException("User not found with email: " + loginRequest.getEmail()));
+
+//            var user = userRepository.findByEmail(loginRequest.getEmail())
+//                    .orElseThrow(() -> new RuntimeException("Invalid email or password"));
 
             var jwt = jwtService.generateToken(user.getEmail());
             return new AuthResponse(user.getId(),user.getRole(),jwt);

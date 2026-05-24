@@ -1,9 +1,6 @@
 package com.dusanbranovic.bookme.controllers;
 
 import com.dusanbranovic.bookme.dto.requests.AddonRequestDTO;
-import com.dusanbranovic.bookme.dto.requests.AddonsRequestDTO;
-import com.dusanbranovic.bookme.dto.requests.PeriodPriceAddonRequestDTO;
-import com.dusanbranovic.bookme.dto.responses.AddonPeriodPriceResponseDTO;
 import com.dusanbranovic.bookme.dto.responses.AddonResponseDTO;
 import com.dusanbranovic.bookme.service.AddonService;
 import org.springframework.web.bind.annotation.*;

@@ -223,7 +223,11 @@ public class BookableUnitService {
         return new BookableUnitFacilitiesResponseDTO(unitId, allFacilitiesDto);
     }
 
-    public BookableUnitDetailedCardDTO getUnit(Long unitId) {
+    public BookableUnitSummaryDTO getUnit(
+            Long unitId,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
 
         BookableUnit unit = bookableUnitRepository.findById(unitId)
                 .orElseThrow(() -> new EntityNotFoundException("Unit with ID " + unitId + " not found"));
@@ -256,7 +260,152 @@ public class BookableUnitService {
 
         List<AddonResponseDTO> addonDTO = unit.getAddonMappings()
                 .stream().map(addon ->
-                        new AddonResponseDTO(addon.getId(), addon.getAddon().getName()))
+                        new AddonResponseDTO(addon.getAddon().getId(), addon.getAddon().getName()))
+                .toList();
+
+        List<UnitFascilityResponseDTO> unitFacilityDTO = unit.getUnitFascilityMappings()
+                .stream().map(ufac ->
+                        new UnitFascilityResponseDTO(ufac.getUnitFascillity().getId(),ufac.getUnitFascillity().getName()))
+                .toList();
+
+        List<UnitImageDTO> unitImageDTO = unit.getImages()
+                .stream().map(image ->
+                        new UnitImageDTO(image.getId(), image.getUrl(), image.getPrimary(), image.getSortOrder()))
+                .toList();
+
+        double totalPrice = calculatePriceForDates(startDate, endDate, unit.getPeriodPriceList());
+
+        log.info("Unit fetched successfully");
+
+        return new BookableUnitSummaryDTO(
+                unit.getId(),
+                propertyDTO,
+                unitFacilityDTO,
+                unitImageDTO,
+                unit.getMaxCapacity(),
+                unit.getSquareMeters(),
+                unit.getSingleBeds(),
+                unit.getDoubleBeds(),
+                unit.getMaxAdultCapacity(),
+                unit.getMaxKidsCapacity(),
+                unit.getName(),
+                totalPrice
+        );
+    }
+
+    public List<BookableUnitAddonsResponseDTO> getUnitAddons(Long unitId, LocalDate startDate, LocalDate endDate) {
+
+        BookableUnit unit = bookableUnitRepository.findById(unitId)
+                .orElseThrow(() -> new EntityNotFoundException("Unit with ID " + unitId + " not found"));
+
+        List<AddonMapping> addonMappings = unit.getAddonMappings();
+
+        return addonMappings.stream()
+                .map(mapping -> {
+                    return new BookableUnitAddonsResponseDTO(
+                            mapping.getId(),
+                            mapping.getAddon().getId(),
+                            mapping.getAddon().getName(),
+                            calculateAddonPrice(startDate,endDate,mapping),
+                            mapping.isPerNight()
+                    );
+                }).collect(Collectors.toList());
+    }
+
+    private double calculateAddonPrice(
+            LocalDate start,
+            LocalDate end,
+            AddonMapping addonMapping
+    ) {
+        List<PeriodPriceAddon> prices = addonMapping.getPeriodPriceAddons();
+
+        if (addonMapping.isPerNight()) {
+            return calculatePerNight(start, end, prices);
+        } else {
+            return calculateOnce(start, prices);
+        }
+    }
+
+    private double calculateOnce(
+            LocalDate start,
+            List<PeriodPriceAddon> prices
+    ) {
+        PeriodPriceAddon price = prices.stream()
+                .filter(p ->
+                        !start.isBefore(p.getStartDate()) &&
+                                !start.isAfter(p.getEndDate())
+                )
+                .reduce((firsy, second) -> second)
+                .orElseThrow(() -> {
+                    log.warn("No addon price defined");
+                    return new EntityNotFoundException("No addon price defined");
+                });
+
+        return price.getPrice();
+    }
+
+    private double calculatePerNight(
+            LocalDate start,
+            LocalDate end,
+            List<PeriodPriceAddon> prices
+    ) {
+
+        double totalPrice = 0.0;
+        for (LocalDate date = start; date.isBefore(end); date = date.plusDays(1)) {
+
+            LocalDate finalDate = date;
+            PeriodPriceAddon priceForDay = prices.stream()
+                    .filter(p ->
+                            !finalDate.isBefore(p.getStartDate()) &&
+                                    !finalDate.isAfter(p.getEndDate())
+                    )
+                    .findFirst()
+                    .orElseThrow(() -> {
+                                log.warn("No price defined for date " + finalDate);
+                                return new EntityNotFoundException(
+                                        "No price defined for date " + finalDate);
+                            }
+                    );
+
+            totalPrice += priceForDay.getPrice();
+        }
+
+        return totalPrice;
+    }
+
+    public BookableUnitDetailedCardDTO getUnitInfo(Long unitId) {
+        BookableUnit unit = bookableUnitRepository.findById(unitId)
+                .orElseThrow(() -> new EntityNotFoundException("Unit with ID " + unitId + " not found"));
+
+        Property property = unit.getProperty();
+
+        PropertyTypeDTO propertyTypeDTO = new PropertyTypeDTO(property.getPropertyType().getId(), property.getPropertyType().getName());
+
+        List<FascilityResponseDTO> facilityDTO = property.getPropertyFacilities().stream().
+                map(fac ->
+                        new FascilityResponseDTO(fac.getFacility().getId(),fac.getFacility().getName()))
+                .toList();
+
+        PropertyDTO propertyDTO = new PropertyDTO(
+                property.getId(),
+                propertyTypeDTO,
+                property.getName(),
+                property.getDescription(),
+                property.getCountry(),
+                property.getCity(),
+                property.getAddress(),
+                property.getHouseRules(),
+                property.getImportantInfo(),
+                facilityDTO);
+
+        List<PeriodPriceDTO> periodPriceDTO = unit.getPeriodPriceList()
+                .stream().map(price ->
+                        new PeriodPriceDTO(price.getId(),price.getPricePerNight(),price.getStartDate(),price.getEndDate(),price.getSeason()))
+                .toList();
+
+        List<AddonResponseDTO> addonDTO = unit.getAddonMappings()
+                .stream().map(addon ->
+                        new AddonResponseDTO(addon.getAddon().getId(), addon.getAddon().getName()))
                 .toList();
 
         List<UnitFascilityResponseDTO> unitFacilityDTO = unit.getUnitFascilityMappings()
