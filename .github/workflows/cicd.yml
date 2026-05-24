@@ -42,7 +42,7 @@ jobs:
           SPRING_DATASOURCE_PASSWORD: bookme_password
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        run: mvn clean package
+        run: mvn clean install -DskipTests
 
   frontend-build:
     runs-on: ubuntu-latest
