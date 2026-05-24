@@ -35,7 +35,7 @@ jobs:
           cache: "maven"
 
       - name: Build and Test Backend
-        working-directory: ./backend
+        working-directory: ./backend/bookme
         env:
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/bookme
           SPRING_DATASOURCE_USERNAME: bookme_user
