@@ -1,0 +1,33 @@
+.search-container {
+  margin: 50px auto;
+  /* max-width: 600px; */
+  width: 100%;
+  /* min-height: 100vh; */
+
+  display: flex;
+  justify-content: center;
+}
+
+.search-form {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+
+  padding: 20px;
+
+  border: 1px solid black;
+
+  gap: 30px;
+}
+
+.search-form input {
+  width: 100%;
+  padding: 8px;
+  font-size: 1rem;
+}
+
+.search-form .datepicker {
+  width: 100%;
+}

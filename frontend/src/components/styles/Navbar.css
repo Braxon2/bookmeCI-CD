@@ -1,0 +1,18 @@
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 30px;
+}
+
+.navLinks {
+  display: flex;
+  justify-content: space-around;
+  gap: 10px;
+  list-style: none;
+}
+
+.hamburger-menu {
+  display: none;
+  flex-direction: column;
+}

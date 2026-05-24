@@ -1,0 +1,9 @@
+.pagep {
+  padding: 2rem 1rem;
+}
+
+.property-list {
+  margin: 0 auto;
+  border: 2px dashed black;
+  max-width: 800px;
+}

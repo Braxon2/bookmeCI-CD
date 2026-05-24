@@ -1,0 +1,24 @@
+.guests-dropdown {
+  padding: 5px 10px;
+}
+
+.guest-input:hover {
+  cursor: pointer;
+}
+
+.guest-menu {
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  gap: 5px;
+}
+
+.circle-button {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+
+.hide {
+  display: none;
+}

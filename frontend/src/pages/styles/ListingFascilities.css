@@ -1,0 +1,21 @@
+.page-fascility {
+  padding: 2rem 1rem;
+}
+
+.fascility-list {
+  margin: 0 auto;
+  border: 2px dashed black;
+  max-width: 800px;
+}
+
+.facilities-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+}
+
+.facility-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}

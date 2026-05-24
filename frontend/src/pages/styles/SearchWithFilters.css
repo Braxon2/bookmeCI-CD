@@ -1,0 +1,163 @@
+.page-wrapper {
+  background-color: #f5f5f5;
+  min-height: 100vh;
+  padding: 2rem 1rem;
+}
+
+.layout-container {
+  display: flex;
+  max-width: 1140px;
+  margin: 0 auto;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.search-box {
+  background-color: #febb02;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.search-box h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.input-group {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.input-group input {
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.search-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #0071c2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.search-btn:hover {
+  background-color: #005999;
+}
+
+.filter-box {
+  border: 1px solid #e7e7e7;
+  border-radius: 4px;
+  background-color: white;
+}
+
+.filter-box h3 {
+  padding: 15px;
+  margin: 0;
+  font-size: 1rem;
+  border-bottom: 1px solid #e7e7e7;
+}
+
+.filter-section {
+  padding: 15px;
+  border-bottom: 1px solid #e7e7e7;
+}
+
+.filter-title {
+  font-weight: bold;
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+}
+
+.checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  margin-right: 10px;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.results-content {
+  flex: 1;
+}
+
+.results-header h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+}
+
+.units-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+@media (max-width: 800px) {
+  .layout-container {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+  }
+
+  .search-box {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+  }
+
+  .search-box h3,
+  .search-btn {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 500px) {
+  .search-box {
+    grid-template-columns: 1fr;
+  }
+
+  .search-box h3,
+  .search-btn {
+    grid-column: span 1;
+  }
+}

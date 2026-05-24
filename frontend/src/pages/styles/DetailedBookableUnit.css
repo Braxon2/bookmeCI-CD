@@ -1,0 +1,44 @@
+.page-unit-wrapper {
+  background-color: #f5f5f5;
+  min-height: 100vh;
+  padding: 2rem 1rem;
+}
+
+.unit-container {
+  max-width: 1140px;
+  margin: 0 auto;
+}
+
+.unit-layout-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* .unit-info-detail {
+} */
+
+.unit-info-detail h2 {
+  margin-bottom: 10px;
+}
+
+.booking-btn {
+  font-size: 1.2 5rem;
+  font-weight: 600;
+  padding: 5px;
+}
+
+.booking-btn {
+  background-color: rgb(58, 58, 206);
+  color: white;
+}
+
+.total-price {
+  font-size: 1.5rem;
+}
+
+.grid-of-addons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}

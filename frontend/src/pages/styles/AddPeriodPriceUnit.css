@@ -1,0 +1,18 @@
+.page-prices {
+  padding: 2rem 1rem;
+}
+
+.price-layout {
+  margin: 0 auto;
+  border: 2px dashed black;
+  max-width: 800px;
+}
+
+.available-prices {
+  display: flex;
+  justify-content: center;
+}
+
+/* .available-prices h2 {
+  display: block;
+} */
