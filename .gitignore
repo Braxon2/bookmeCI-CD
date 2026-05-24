@@ -1,0 +1,10 @@
+# Environment variables
+.env
+
+# IDE and OS files (optional but good practice)
+.idea/
+.vscode/
+.DS_Store
+
+#Secrets
+*.txt
