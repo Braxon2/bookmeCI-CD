@@ -1,0 +1,41 @@
+--
+-- PostgreSQL database dump
+--
+
+-- Dumped from database version 17.5
+-- Dumped by pg_dump version 17.5
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- Data for Name: app_user; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO public.app_user VALUES (1, 'admin@gmail.com', 'Admin', 'Adminovic', '$2a$10$/UKJmG173xQVvRejDLQ/s.Jp1EVzZqkpgwD.sbIIr6.H6mYO9FNfG', '0640593042', 'ADMIN');
+INSERT INTO public.app_user VALUES (2, 'mare@gmail.com', 'Marko', 'Simonovic', '$2a$10$o/JwV/0mbaC/FQQKVJZUkeHNB5BDFlJ05yugsT04uLbmf.RS9qfEe', '1234567890', 'OWNER');
+INSERT INTO public.app_user VALUES (3, 'dule@gmail.com', 'Dusan', 'Branovic', '$2a$10$ib2Qivwq90QsyAIM/X3Fuelr.L5mfVsSDzbaMRikqr/.SO6Aujg6q', '09876543212', 'OWNER');
+INSERT INTO public.app_user VALUES (4, 'joca@gmail.com', 'Jovan', 'Stevanovic', '$2a$10$Bdbv84mi.WEf40Pn68h.SegzZcXOKJ.n.8RghfzKMnOalnrozOmua', '5432167898', 'USER');
+INSERT INTO public.app_user VALUES (5, 'luka@gmail.com', 'Luka', 'Tatovic', '$2a$10$ToTpCJKWECNWDtJKB6OgNOIxGwMHVgxLuEo4N/OyPXWYBwYmAkS52', '32189045672', 'USER');
+
+
+--
+-- Name: app_user_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.app_user_id_seq', 5, true);
+
+
+--
+-- PostgreSQL database dump complete
+--
+

@@ -1,0 +1,3 @@
+ALTER TABLE property ALTER COLUMN description TYPE TEXT;
+ALTER TABLE property ALTER COLUMN house_rules TYPE TEXT;
+ALTER TABLE property ALTER COLUMN important_info TYPE TEXT;
