@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     container_name: bookme-db
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -13,9 +13,9 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: ./backend/bookme
       dockerfile: Dockerfile
-    container_name: bookme-backend
+    container_name: bookmeci-cd-backend
     ports:
       - "8080:8080"
     depends_on:
@@ -25,10 +25,12 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      AWS_S3_REGION: ${AWS_S3_REGION}
-      AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME}
+      aws.s3.bucketName: ${AWS_S3_BUCKET_NAME}
+      aws.s3.region: ${AWS_S3_REGION}
+      aws.accessKeyId: ${AWS_ACCESS_KEY_ID}
+      aws.secretKey: ${AWS_SECRET_ACCESS_KEY}
+      ratingLimit.tokenInBucket: ${RATINGLIMIT_TOKENINBUCKET}
+      ratingLimit.duration: ${RATINGLIMIT_DURATION}
 
   frontend:
     build:

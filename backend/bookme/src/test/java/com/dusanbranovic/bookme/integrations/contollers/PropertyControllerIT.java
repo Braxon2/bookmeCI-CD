@@ -133,6 +133,6 @@ class PropertyControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.url").value(mockUrl));
     }
-    
+
  */
 }
