@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
+  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -29,7 +30,7 @@ export const AuthProvider = ({ children }) => {
     setError(null);
 
     try {
-      const res = await fetch("http://localhost:8080/auth/login", {
+      const res = await fetch(`${apiURL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

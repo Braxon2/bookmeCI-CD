@@ -10,16 +10,15 @@ import {
 } from "react-router-dom";
 
 const AddAddonToUnit = () => {
-  const { data } = useFetch("http://localhost:8080/api/addons");
+  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  const { data } = useFetch(`${apiURL}/api/addons`);
   const [addons, setAddons] = useState([]);
 
   const { error, post } = usePost();
   const navigate = useNavigate();
   const { unitId } = useParams();
 
-  const { data: unit } = useFetch(
-    `http://localhost:8080/api/units/${unitId}/info`,
-  );
+  const { data: unit } = useFetch(`${apiURL}/api/units/${unitId}/info`);
 
   const unitAddons = unit?.addonList || [];
 
@@ -29,7 +28,7 @@ const AddAddonToUnit = () => {
 
   const handleSubmit = async (e, id, name) => {
     e.preventDefault();
-    const res = await post(`http://localhost:8080/api/units/${unitId}/addons`, {
+    const res = await post(`${apiURL}/api/units/${unitId}/addons`, {
       id: id,
       name: name,
     });

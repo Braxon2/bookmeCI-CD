@@ -7,13 +7,14 @@ import { useFetch } from "../hooks/useFetch";
 import dayjs from "dayjs";
 import { Text } from "@mantine/core";
 const AddPeriodPriceUnit = () => {
+  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
   const { unitId } = useParams();
   const [value, setValue] = useState([null, null]);
   const [price, setPrice] = useState(0.0);
   const [season, setSeason] = useState("");
 
   const { data: priceDates } = useFetch(
-    unitId ? `http://localhost:8080/api/units/${unitId}/period-prices` : null,
+    unitId ? `${apiURL}/api/units/${unitId}/period-prices` : null,
   );
 
   const periodPriceToAdd = {
@@ -29,10 +30,7 @@ const AddPeriodPriceUnit = () => {
   };
 
   const handleSubmit = async () => {
-    await post(
-      `http://localhost:8080/api/units/${unitId}/add-price`,
-      periodPriceToAdd,
-    );
+    await post(`${apiURL}/api/units/${unitId}/add-price`, periodPriceToAdd);
   };
   return (
     <div className="page-prices">

@@ -4,9 +4,10 @@ import { useFetch } from "../hooks/useFetch";
 import "./styles/ListingProperties.css";
 const ListingProperties = () => {
   const { user } = useAuth();
+  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
   const userId = user?.id;
   const { data: properties } = useFetch(
-    userId ? `http://localhost:8080/api/users/${userId}/properties` : null,
+    userId ? `${apiURL}/api/users/${userId}/properties` : null,
   );
   if (!user) {
     return <p>Loading...</p>;

@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import usePostProperty from "../hooks/usePostProperty";
 
 const AddUnit = () => {
+  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
   const { propertyId } = useParams();
 
   const [maxCapacity, setMaxCapacity] = useState(0);
@@ -30,7 +31,7 @@ const AddUnit = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     await postProperty(
-      `http://localhost:8080/api/properties/${propertyId}/add-unit`,
+      `${apiURL}/api/properties/${propertyId}/add-unit`,
       unitForCreation,
     );
   };

@@ -4,11 +4,10 @@ import { useFetch } from "../hooks/useFetch";
 import "./styles/ListingUnits.css";
 const ListingUnits = () => {
   const { propertyId } = useParams();
+  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
   const { data: units } = useFetch(
-    propertyId
-      ? `http://localhost:8080/api/properties/${propertyId}/units`
-      : null,
+    propertyId ? `${apiURL}/api/properties/${propertyId}/units` : null,
   );
 
   const navigate = useNavigate();

@@ -7,7 +7,8 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 const AddProperty = () => {
-  const { data: types } = useFetch("http://localhost:8080/api/property-type");
+  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  const { data: types } = useFetch(`${apiURL}/api/property-type`);
 
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
@@ -38,10 +39,7 @@ const AddProperty = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await postProperty(
-      "http://localhost:8080/api/properties",
-      propertyForCreation,
-    );
+    await postProperty(`${apiURL}/api/properties`, propertyForCreation);
   };
   return (
     <div className="page">

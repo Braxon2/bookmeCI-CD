@@ -3,7 +3,8 @@ import { useFetch } from "../hooks/useFetch";
 import "./styles/ListingFascilities.css";
 import usePost from "../hooks/usePost";
 const ListingFascilities = () => {
-  const { data } = useFetch("http://localhost:8080/api/fascilities");
+  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  const { data } = useFetch(`${apiURL}/api/fascilities`);
   const [facilities, setFacilities] = useState([]);
 
   const [fascility, setFascility] = useState("");
@@ -13,9 +14,10 @@ const ListingFascilities = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const res = await post("http://localhost:8080/api/fascilities", {
+    const res = await post(`${apiURL}/api/fascilities`, {
       name: fascility,
     });
+    console.log(apiURL);
 
     if (res && res.id) {
       setFacilities((prev) => [...prev, res]);

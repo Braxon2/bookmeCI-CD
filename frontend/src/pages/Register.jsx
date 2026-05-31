@@ -4,6 +4,7 @@ import "./styles/Register.css";
 import { useNavigate } from "react-router-dom";
 
 const Register = () => {
+  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
   const [firstname, setFirstname] = useState("");
   const [lastname, setLastname] = useState("");
   const [phonenumber, setPhonenumber] = useState("");
@@ -26,7 +27,7 @@ const Register = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/auth/register", {
+      const res = await fetch(`${apiURL}/auth/register`, {
         method: "POST",
         headers: { "Content-type": "application/json" },
         body: JSON.stringify({

@@ -6,6 +6,7 @@ import "./styles/PropertyImages.css";
 import { useParams } from "react-router-dom";
 import useImageUpload from "../hooks/useImageUpload";
 const PropertyImages = () => {
+  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
   const { propertyId } = useParams();
   const fileInputRef = useRef(null);
 
@@ -13,7 +14,7 @@ const PropertyImages = () => {
     data,
     loading: fetchLoading,
     error: fetchError,
-  } = useFetch(`http://localhost:8080/api/properties/${propertyId}/images`);
+  } = useFetch(`${apiURL}/api/properties/${propertyId}/images`);
 
   const [images, setImages] = useState([]);
   const [imageFile, setImageFile] = useState(null);
@@ -30,7 +31,7 @@ const PropertyImages = () => {
     e.preventDefault();
     if (!imageFile) return;
 
-    const url = `http://localhost:8080/api/properties/${propertyId}/images`;
+    const url = `${apiURL}/api/properties/${propertyId}/images`;
     const newImageUrl = await uploadImage(url, imageFile);
 
     if (newImageUrl) {

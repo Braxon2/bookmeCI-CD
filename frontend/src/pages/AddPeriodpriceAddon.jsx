@@ -9,6 +9,7 @@ import { Text, Button } from "@mantine/core";
 import { useToggle } from "@mantine/hooks";
 
 const AddPeriodPriceAddon = () => {
+  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
   const { unitId, addonId } = useParams();
 
   const [value, setValue] = useState([null, null]);
@@ -20,7 +21,7 @@ const AddPeriodPriceAddon = () => {
 
   const { data: priceDates } = useFetch(
     unitId
-      ? `http://localhost:8080/api/units/${unitId}/addons/${addonId}/period-prices`
+      ? `${apiURL}/api/units/${unitId}/addons/${addonId}/period-prices`
       : null,
   );
 
@@ -38,7 +39,7 @@ const AddPeriodPriceAddon = () => {
 
   const handleSubmit = async () => {
     await post(
-      `http://localhost:8080/api/units/${unitId}/addons/${addonId}/add-price`,
+      `${apiURL}/api/units/${unitId}/addons/${addonId}/add-price`,
       periodPriceToAdd,
     );
   };
@@ -49,7 +50,7 @@ const AddPeriodPriceAddon = () => {
 
     try {
       const res = await fetch(
-        `http://localhost:8080/api/units/${unitId}/addons/${addonId}/billing-type`,
+        `${apiURL}/api/units/${unitId}/addons/${addonId}/billing-type`,
         {
           method: "PATCH",
           headers: {

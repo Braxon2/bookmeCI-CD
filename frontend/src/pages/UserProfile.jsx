@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
 
 const UserProfile = () => {
+  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
   const { user } = useAuth();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -17,11 +18,11 @@ const UserProfile = () => {
   const [error, setError] = useState(null);
 
   const { data: userInfo, loading: userLoading } = useFetch(
-    user ? `http://localhost:8080/api/users/${user.id}` : null,
+    user ? `${apiURL}/api/users/${user.id}` : null,
   );
 
   const { data: bookings, loading: bookingsLoading } = useFetch(
-    user ? `http://localhost:8080/api/users/${user.id}/bookings` : null,
+    user ? `${apiURL}/api/users/${user.id}/bookings` : null,
   );
 
   useEffect(() => {
@@ -51,16 +52,13 @@ const UserProfile = () => {
   const handleCancelEvent = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(
-        `http://localhost:8080/api/bookings/${bookingID}`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
-            "Content-Type": "application/json",
-          },
+      const res = await fetch(`${apiURL}/api/bookings/${bookingID}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
+          "Content-Type": "application/json",
         },
-      );
+      });
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({

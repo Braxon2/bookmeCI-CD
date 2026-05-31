@@ -4,6 +4,7 @@ import "./styles/DetailedBookableUnit.css";
 import { useState } from "react";
 
 const DetailedBookableUnit = () => {
+  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
   const { unitId } = useParams();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -18,13 +19,13 @@ const DetailedBookableUnit = () => {
 
   const { data: unit, loading } = useFetch(
     unitId
-      ? `http://localhost:8080/api/units/${unitId}?startDate=${startDate}&endDate=${endDate}`
+      ? `${apiURL}/api/units/${unitId}?startDate=${startDate}&endDate=${endDate}`
       : null,
   );
 
   const { data: addons } = useFetch(
     unitId
-      ? `http://localhost:8080/api/units/${unitId}/addons?startDate=${startDate}&endDate=${endDate}`
+      ? `${apiURL}/api/units/${unitId}/addons?startDate=${startDate}&endDate=${endDate}`
       : null,
   );
 
@@ -70,17 +71,14 @@ const DetailedBookableUnit = () => {
 
     console.log(chosenAddons);
     try {
-      const res = await fetch(
-        `http://localhost:8080/api/units/${unitId}/book`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(bookingRequestDTO),
+      const res = await fetch(`${apiURL}/api/units/${unitId}/book`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify(bookingRequestDTO),
+      });
 
       const json = await res.json();
 

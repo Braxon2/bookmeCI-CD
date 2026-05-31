@@ -7,6 +7,7 @@ import { useSearchParams } from "react-router-dom";
 import "./styles/SearchWithFilters.css";
 
 const SearchWithfilter = () => {
+  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [city, setCity] = useState(searchParams.get("city") || "");
@@ -25,12 +26,8 @@ const SearchWithfilter = () => {
   const [selectedUnitFacs, setSelectedUnitFacs] = useState([]);
   const [units, setUnits] = useState([]);
 
-  const { data: propFacilities } = useFetch(
-    "http://localhost:8080/api/fascilities",
-  );
-  const { data: unitFacilities } = useFetch(
-    "http://localhost:8080/api/unit-fascilities",
-  );
+  const { data: propFacilities } = useFetch(`${apiURL}/api/fascilities`);
+  const { data: unitFacilities } = useFetch(`${apiURL}/api/unit-fascilities`);
 
   useEffect(() => {
     fetchUnits();
@@ -63,7 +60,7 @@ const SearchWithfilter = () => {
     const qPropFacs = searchParams.get("propertyFacilities") || "";
     const qUnitFacs = searchParams.get("unitFacilities") || "";
 
-    let url = `http://localhost:8080/api/units/search?city=${qCity}&country=${qCountry}&adults=${qAdults}&kids=${qKids}`;
+    let url = `${apiURL}/api/units/search?city=${qCity}&country=${qCountry}&adults=${qAdults}&kids=${qKids}`;
 
     if (qStart) url += `&startDate=${qStart}`;
     if (qEnd) url += `&endDate=${qEnd}`;

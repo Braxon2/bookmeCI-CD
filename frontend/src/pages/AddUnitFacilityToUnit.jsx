@@ -4,7 +4,8 @@ import "./styles/ListingFascilities.css";
 import usePost from "../hooks/usePost";
 import { useLocation, useParams } from "react-router-dom";
 const AddUnitFacilityToUnit = () => {
-  const { data } = useFetch("http://localhost:8080/api/unit-fascilities");
+  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  const { data } = useFetch(`${apiURL}/api/unit-fascilities`);
   const [unitFacilities, setUnitFacilities] = useState([]);
   const [selectedFacilties, setSelectedFacilties] = useState([]);
 
@@ -12,14 +13,14 @@ const AddUnitFacilityToUnit = () => {
 
   const { unitId } = useParams();
 
-  const { data: unit } = useFetch(`http://localhost:8080/api/units/${unitId}`);
+  const { data: unit } = useFetch(`${apiURL}/api/units/${unitId}`);
   const faciltiesFromUnit = unit?.unitFascilityDTO;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const res = await post(
-      `http://localhost:8080/api/units/${unitId}/add-unit-facilities`,
+      `${apiURL}/api/units/${unitId}/add-unit-facilities`,
       {
         facilityIds: selectedFacilties,
       },

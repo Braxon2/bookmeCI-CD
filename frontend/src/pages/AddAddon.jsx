@@ -4,7 +4,8 @@ import "./styles/ListingFascilities.css";
 import usePost from "../hooks/usePost";
 import { useLocation, useParams } from "react-router-dom";
 const AddAddon = () => {
-  const { data } = useFetch("http://localhost:8080/api/addons");
+  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  const { data } = useFetch(`${apiURL}/api/addons`);
   const [addons, setAddons] = useState([]);
   const [selectedFacilties, setSelectedFacilties] = useState([]);
 
@@ -19,7 +20,7 @@ const AddAddon = () => {
 
     console.log(addonName);
 
-    const res = await post(`http://localhost:8080/api/addons`, {
+    const res = await post(`${apiURL}/api/addons`, {
       name: addonName,
     });
 
