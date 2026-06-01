@@ -91,3 +91,5 @@ jobs:
           context: ./frontend
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/bookme-frontend:latest
+          build-args: |
+            VITE_API_URL=http://192.168.124.28:8080
