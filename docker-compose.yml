@@ -12,9 +12,7 @@ services:
       - postgres_data:/var/lib/postgresql
 
   backend:
-    build:
-      context: ./backend/bookme
-      dockerfile: Dockerfile
+    image: braxon2/bookme-backend:latest
     container_name: bookmeci-cd-backend
     ports:
       - "8080:8080"
@@ -33,9 +31,7 @@ services:
       ratingLimit.duration: ${RATINGLIMIT_DURATION}
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: braxon2/bookme-frontend:latest
     container_name: bookme-frontend
     ports:
       - "80:80"
