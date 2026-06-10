@@ -57,10 +57,8 @@ services:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd /path/to/your/app_directory
-            # Pull the latest images from Docker Hub
+            cd ~/bookme
             sudo docker compose -f docker-compose.prod.yml pull
-            # Recreate containers with the new images seamlessly
             sudo docker compose -f docker-compose.prod.yml up -d
 
 volumes:
