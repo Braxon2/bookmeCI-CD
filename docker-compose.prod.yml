@@ -59,7 +59,7 @@ services:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "docker-compose.prod.yml"
-          target: "~/bookme"
+          target: "/home/ubuntu/bookme/"
 
       - name: Execute Deployment Commands
         uses: appleboy/ssh-action@v1.0.3
