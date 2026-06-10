@@ -44,34 +44,6 @@ services:
     networks:
       - bookme-network
 
-  deploy-to-ec2:
-    needs: docker-publish
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Copy Compose file to EC2
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "docker-compose.prod.yml"
-          target: "/home/ubuntu/bookme/"
-
-      - name: Execute Deployment Commands
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            cd ~/bookme
-            sudo docker compose -f docker-compose.prod.yml pull
-            sudo docker compose -f docker-compose.prod.yml up -d
-
 volumes:
   postgres_data:
 
