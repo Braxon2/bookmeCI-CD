@@ -10,7 +10,7 @@ import {
 } from "react-router-dom";
 
 const AddAddonToUnit = () => {
-  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  const apiURL = import.meta.env.VITE_API_URL || "";
   const { data } = useFetch(`${apiURL}/api/addons`);
   const [addons, setAddons] = useState([]);
 

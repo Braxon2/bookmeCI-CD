@@ -7,7 +7,7 @@ import { useFetch } from "../hooks/useFetch";
 import dayjs from "dayjs";
 import { Text } from "@mantine/core";
 const AddPeriodPriceUnit = () => {
-  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  const apiURL = import.meta.env.VITE_API_URL || "";
   const { unitId } = useParams();
   const [value, setValue] = useState([null, null]);
   const [price, setPrice] = useState(0.0);

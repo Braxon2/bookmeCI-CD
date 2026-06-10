@@ -3,7 +3,7 @@ import { useFetch } from "../hooks/useFetch";
 import "./styles/ListingFascilities.css";
 import usePost from "../hooks/usePost";
 const ListingUnitFacilties = () => {
-  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  const apiURL = import.meta.env.VITE_API_URL || "";
   const { data } = useFetch(`${apiURL}/api/unit-fascilities`);
   const [unitFacilities, setUnitFacilities] = useState([]);
 

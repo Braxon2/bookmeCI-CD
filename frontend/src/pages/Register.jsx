@@ -4,7 +4,7 @@ import "./styles/Register.css";
 import { useNavigate } from "react-router-dom";
 
 const Register = () => {
-  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  const apiURL = import.meta.env.VITE_API_URL || "";
   const [firstname, setFirstname] = useState("");
   const [lastname, setLastname] = useState("");
   const [phonenumber, setPhonenumber] = useState("");

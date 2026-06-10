@@ -14,8 +14,7 @@ services:
       - bookme-network
 
   backend:
-    build:
-      context: ./backend/bookme
+    image: braxon2/bookme-backend:latest
     container_name: bookmeci-cd-backend
     ports:
       - "8080:8080"
@@ -36,8 +35,7 @@ services:
       - bookme-network
 
   frontend:
-    build:
-      context: ./frontend
+    image: braxon2/bookme-frontend:latest
     container_name: bookme-frontend
     ports:
       - "80:80"
@@ -45,6 +43,25 @@ services:
       - backend
     networks:
       - bookme-network
+
+  deploy-to-ec2:
+    needs: docker-publish
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /path/to/your/app_directory
+            # Pull the latest images from Docker Hub
+            sudo docker compose -f docker-compose.prod.yml pull
+            # Recreate containers with the new images seamlessly
+            sudo docker compose -f docker-compose.prod.yml up -d
 
 volumes:
   postgres_data:

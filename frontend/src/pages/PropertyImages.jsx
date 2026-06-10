@@ -6,7 +6,7 @@ import "./styles/PropertyImages.css";
 import { useParams } from "react-router-dom";
 import useImageUpload from "../hooks/useImageUpload";
 const PropertyImages = () => {
-  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  const apiURL = import.meta.env.VITE_API_URL || "";
   const { propertyId } = useParams();
   const fileInputRef = useRef(null);
 

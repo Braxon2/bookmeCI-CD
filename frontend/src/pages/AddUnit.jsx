@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import usePostProperty from "../hooks/usePostProperty";
 
 const AddUnit = () => {
-  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  const apiURL = import.meta.env.VITE_API_URL || "";
   const { propertyId } = useParams();
 
   const [maxCapacity, setMaxCapacity] = useState(0);

@@ -1,7 +1,7 @@
 import { useFetch } from "../hooks/useFetch";
 
 const Facilities = ({ selectedFacilities, setSelectedFacilities }) => {
-  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  const apiURL = import.meta.env.VITE_API_URL || "";
   const { data: facilities } = useFetch(`${apiURL}/api/fascilities`);
 
   const handleChange = (facility, checked) => {

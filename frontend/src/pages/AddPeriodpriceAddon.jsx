@@ -9,7 +9,7 @@ import { Text, Button } from "@mantine/core";
 import { useToggle } from "@mantine/hooks";
 
 const AddPeriodPriceAddon = () => {
-  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  const apiURL = import.meta.env.VITE_API_URL || "";
   const { unitId, addonId } = useParams();
 
   const [value, setValue] = useState([null, null]);

@@ -7,7 +7,7 @@ import { useSearchParams } from "react-router-dom";
 import "./styles/SearchWithFilters.css";
 
 const SearchWithfilter = () => {
-  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  const apiURL = import.meta.env.VITE_API_URL || "";
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [city, setCity] = useState(searchParams.get("city") || "");

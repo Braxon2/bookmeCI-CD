@@ -4,7 +4,7 @@ import "./styles/DetailedBookableUnit.css";
 import { useState } from "react";
 
 const DetailedBookableUnit = () => {
-  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  const apiURL = import.meta.env.VITE_API_URL || "";
   const { unitId } = useParams();
 
   const [isLoading, setIsLoading] = useState(false);

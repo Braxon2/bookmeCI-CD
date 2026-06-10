@@ -3,7 +3,7 @@ import "./styles/PropertyCard.css";
 import { useFetch } from "../hooks/useFetch";
 import notFound from "../assets/images/Image-not-found.png";
 const PropertyCard = ({ property }) => {
-  const apiURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  const apiURL = import.meta.env.VITE_API_URL || "";
   const navigate = useNavigate();
 
   const navigateToUnits = () => {
