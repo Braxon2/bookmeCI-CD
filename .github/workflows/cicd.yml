@@ -125,9 +125,8 @@ jobs:
             cd /home/ubuntu/bookme
             
             echo "Deploying version: $CURRENT_SHA"
-            export APP_VERSION=$CURRENT_SHA
-            sudo -E docker compose -f docker-compose.prod.yml pull
-            sudo -E docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            sudo env APP_VERSION=$CURRENT_SHA docker compose -f docker-compose.prod.yml pull
+            sudo env APP_VERSION=$CURRENT_SHA docker compose -f docker-compose.prod.yml up -d --remove-orphans
             
             echo "Waiting 15 seconds for Spring Boot startup..."
             sleep 15
@@ -145,9 +144,8 @@ jobs:
             
             if [ "$HEALTH_OK" = false ]; then
               echo "Health check failed! Initiating automated rollback to $PREVIOUS_SHA..."
-              export APP_VERSION=$PREVIOUS_SHA
-              sudo -E docker compose -f docker-compose.prod.yml pull
-              sudo -E docker compose -f docker-compose.prod.yml up -d --remove-orphans
+              sudo env APP_VERSION=$PREVIOUS_SHA docker compose -f docker-compose.prod.yml pull
+              sudo env APP_VERSION=$PREVIOUS_SHA docker compose -f docker-compose.prod.yml up -d --remove-orphans
             
               echo "Rollback complete. Marking build as failed."
               exit 1 
