@@ -14,8 +14,8 @@ services:
       - bookme-network
 
   backend:
-    image: braxon2/bookme-backend:latest
-    container_name: bookmeci-cd-backend
+    image: braxon2/bookme-backend:${APP_VERSION:-latest}
+    container_name: bookme-backend
     ports:
       - "8080:8080"
     depends_on:
@@ -35,7 +35,7 @@ services:
       - bookme-network
 
   frontend:
-    image: braxon2/bookme-frontend:latest
+    image: braxon2/bookme-frontend:${APP_VERSION:-latest}
     container_name: bookme-frontend
     ports:
       - "80:80"

@@ -81,14 +81,18 @@ jobs:
         with:
           context: ./backend/bookme
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/bookme-backend:latest
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/bookme-backend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/bookme-backend:${{ github.sha }}
 
       - name: Build and Push Frontend Image
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/bookme-frontend:latest
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/bookme-frontend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/bookme-frontend:${{ github.sha }}
 
   deploy-to-ec2:
     needs: docker-publish
@@ -107,14 +111,44 @@ jobs:
           source: "docker-compose.prod.yml"
           target: "/home/ubuntu/bookme/"
 
-      - name: Execute Deployment Commands
+      - name: Deploy, Health Check, and Auto-Rollback
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          CURRENT_SHA: ${{ github.sha }}
+          PREVIOUS_SHA: ${{ github.event.before }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: CURRENT_SHA,PREVIOUS_SHA
           script: |
             cd /home/ubuntu/bookme
-            sudo docker compose -f docker-compose.prod.yml down
-            sudo docker compose -f docker-compose.prod.yml pull
-            sudo docker compose -f docker-compose.prod.yml up -d
+            
+            echo "Deploying version: $CURRENT_SHA"
+            export APP_VERSION=$CURRENT_SHA
+            sudo -E docker compose -f docker-compose.prod.yml pull
+            sudo -E docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            
+            echo "Waiting 15 seconds for Spring Boot startup..."
+            sleep 15
+            
+            HEALTH_OK=false
+            for i in $(seq 1 10); do
+              if curl -sf http://localhost:8080/api/health > /dev/null; then
+                HEALTH_OK=true
+                echo "Health check passed! Deployment successful."
+                break
+              fi
+              echo "Attempt $i failed, retrying in 5 seconds..."
+              sleep 5
+            done
+            
+            if [ "$HEALTH_OK" = false ]; then
+              echo "Health check failed! Initiating automated rollback to $PREVIOUS_SHA..."
+              export APP_VERSION=$PREVIOUS_SHA
+              sudo -E docker compose -f docker-compose.prod.yml pull
+              sudo -E docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            
+              echo "Rollback complete. Marking build as failed."
+              exit 1 
+            fi

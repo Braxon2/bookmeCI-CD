@@ -37,6 +37,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/auth/**").permitAll()
 
+                        .requestMatchers("/api/health").permitAll()
+
                         .requestMatchers(HttpMethod.GET, "/api/properties/**").hasAnyAuthority("ADMIN","OWNER","USER")
 
 
