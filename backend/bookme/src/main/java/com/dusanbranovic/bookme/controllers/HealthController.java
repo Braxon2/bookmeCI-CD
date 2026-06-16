@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class HealthController {
     @GetMapping("/health")
     public ResponseEntity<String> healthCheck() {
-//        return ResponseEntity.ok("Application is healthy and running!");
-        return ResponseEntity.status(500).body("FATAL ERROR: APPLICATION NOT RUNNING!");
+        return ResponseEntity.ok("Application is healthy and running!");
+//        return ResponseEntity.status(500).body("FATAL ERROR: APPLICATION NOT RUNNING!");
     }
 }
