@@ -12,7 +12,7 @@ public class BookableUnitMapper {
 
     public BookableUnitsResponseDTO toDTO(BookableUnit unit){
         return new BookableUnitsResponseDTO(
-                unit.getId(),
+                unit.getPublicId(),
                 unit.getMaxCapacity(),
                 unit.getSquareMeters(),
                 unit.getSingleBeds(),
@@ -31,7 +31,7 @@ public class BookableUnitMapper {
 
     public BookableUnit toEntity(BookableUnitsResponseDTO dto){
         BookableUnit unit = new BookableUnit();
-        unit.setId(dto.id());
+        unit.setPublicId(dto.id());
         unit.setName(dto.name());
         unit.setMaxCapacity(dto.maxCapacity());
         unit.setMaxKidsCapacity(dto.maxKidsCapacity());

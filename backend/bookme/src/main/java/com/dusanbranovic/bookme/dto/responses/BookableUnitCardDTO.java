@@ -1,7 +1,9 @@
 package com.dusanbranovic.bookme.dto.responses;
 
+import java.util.UUID;
+
 public record BookableUnitCardDTO(
-        Long unitId,
+        UUID unitId,
         String propertyName,
         String unitName,
         String address,

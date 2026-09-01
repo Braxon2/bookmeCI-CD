@@ -31,7 +31,7 @@ public class PropertyMapper {
                 : property.getPropertyFacilities().stream()
                 .map(fascilityMapper::toDTO)
                 .collect(Collectors.toList());
-        return new PropertyDTO(property.getId(),
+        return new PropertyDTO(property.getPublicId(),
                 propertyTypeMapper.toDTO(property.getPropertyType()),
                 property.getName(),
                 property.getDescription(),

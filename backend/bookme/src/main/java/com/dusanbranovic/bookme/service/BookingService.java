@@ -22,6 +22,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class BookingService {
@@ -53,8 +54,8 @@ public class BookingService {
         this.bookableUnitMapper = bookableUnitMapper;
     }
 
-    public BookingResponseDTO bookAUnit(Long unitId, BookingRequestDTO bookingRequestDTO) {
-        BookableUnit unit = bookableUnitRepository.findById(unitId).orElseThrow(() -> {
+    public BookingResponseDTO bookAUnit(UUID unitId, BookingRequestDTO bookingRequestDTO) {
+        BookableUnit unit = bookableUnitRepository.findByPublicId(unitId).orElseThrow(() -> {
             log.error("Unit not found");
             return new EntityNotFoundException("Unit with id " + unitId + " not found");
         });

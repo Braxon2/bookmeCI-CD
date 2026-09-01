@@ -8,7 +8,7 @@ public record BookableUnitSummaryDTO(
 //        List<PeriodPriceDTO> periodPriceList,
 //        List<AddonResponseDTO> addonList,
         List<UnitFascilityResponseDTO> unitFascilityDTO,
-        List<UnitImageDTO> images,
+        List<ImageResponseDTO> images,
         int maxCapacity,
         double squareMeters,
         int singleBeds,

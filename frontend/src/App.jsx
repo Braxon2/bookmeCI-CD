@@ -35,10 +35,7 @@ function App() {
         <Route path="/add-property" element={<AddProperty />} />
         <Route path="/list-properties" element={<ListingProperties />} />
 
-        <Route
-          path="/properties/:propertyId/units"
-          element={<ListingUnits />}
-        />
+        <Route path="/properties/:publicId/units" element={<ListingUnits />} />
 
         <Route path="/fascilities" element={<ListingFascilities />} />
         <Route path="/unit-fascilities" element={<ListingUnitFacilties />} />
@@ -48,7 +45,7 @@ function App() {
         />
 
         <Route
-          path="/properties/:propertyId/images"
+          path="/properties/:publicId/images"
           element={<PropertyImages />}
         />
 

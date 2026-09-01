@@ -11,15 +11,22 @@ import com.dusanbranovic.bookme.repository.BookableUnitRepository;
 import com.dusanbranovic.bookme.repository.PeriodPriceRepository;
 import com.dusanbranovic.bookme.repository.UnitFascilityRepository;
 import com.dusanbranovic.bookme.repository.UnitFascillityMappingRepository;
+import com.dusanbranovic.bookme.specifications.BookableUnitSpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.awt.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
@@ -31,6 +38,7 @@ public class BookableUnitService {
     private final PeriodPriceRepository periodPriceRepository;
     private final UnitFascilityRepository unitFascilityRepository;
     private final UnitFascillityMappingRepository unitFascillityMappingRepository;
+    private final S3Service s3Service;
 
     private final BookableUnitMapper bookableUnitMapper;
     private final PeriodPriceMapper periodPriceMapper;
@@ -42,6 +50,7 @@ public class BookableUnitService {
             PeriodPriceRepository periodPriceRepository,
             UnitFascilityRepository unitFascilityRepository,
             UnitFascillityMappingRepository unitFascillityMappingRepository,
+            S3Service s3Service,
             BookableUnitMapper bookableUnitMapper,
             PeriodPriceMapper periodPriceMapper
     ) {
@@ -49,15 +58,16 @@ public class BookableUnitService {
         this.periodPriceRepository = periodPriceRepository;
         this.unitFascilityRepository = unitFascilityRepository;
         this.unitFascillityMappingRepository = unitFascillityMappingRepository;
+        this.s3Service = s3Service;
         this.bookableUnitMapper = bookableUnitMapper;
         this.periodPriceMapper = periodPriceMapper;
     }
 
     public PeriodPriceResponseDTO addPeriodPrice(
-            Long unitId,
+            UUID unitId,
             PeriodPriceRequestDTO periodPriceDTO
     ) {
-        BookableUnit unit = bookableUnitRepository.findById(unitId).orElseThrow(() ->{
+        BookableUnit unit = bookableUnitRepository.findByPublicId(unitId).orElseThrow(() ->{
             log.error("Unit not found");
             return new EntityNotFoundException("Unit with id " + unitId + " not found");
         });
@@ -76,9 +86,9 @@ public class BookableUnitService {
 
     }
 
-    public List<PeriodPriceResponseDTO> getPeriodPrices(Long unitId) {
+    public List<PeriodPriceResponseDTO> getPeriodPrices(UUID unitId) {
 
-        BookableUnit unit = bookableUnitRepository.findById(unitId).orElseThrow(() ->{
+        BookableUnit unit = bookableUnitRepository.findByPublicId(unitId).orElseThrow(() ->{
             log.error("Unit not found");
             return new EntityNotFoundException("Unit with id " + unitId + " not found");
         });
@@ -92,72 +102,58 @@ public class BookableUnitService {
                 );
     }
 
-
     @Transactional(readOnly = true)
-    public List<BookableUnitCardDTO> searchUnits(
-            String city,
-            String country,
-            int adults,
-            int kids,
-            LocalDate startDate,
-            LocalDate endDate,
-            Double maxPrice,
-            List<Long> propertyFacilities,
-            List<Long> unitFacilities
+    public Page<BookableUnitCardDTO> searchUnits(
+            String city, String country, int adults, int kids,
+            LocalDate startDate, LocalDate endDate, Double maxPrice,
+            List<Long> propertyFacilities, List<Long> unitFacilities,
+            Pageable pageable
     ) {
         LocalDateTime checkIn = startDate.atStartOfDay();
         LocalDateTime checkOut = endDate.atStartOfDay();
 
-        List<Long> propFacs = (propertyFacilities != null) ? propertyFacilities : List.of();
-        List<Long> unitFacs = (unitFacilities != null) ? unitFacilities : List.of();
+        Specification<BookableUnit> spec = Specification.where(BookableUnitSpecification.inLocation(city, country))
+                .and(BookableUnitSpecification.hasCapacity(adults, kids))
+                .and(BookableUnitSpecification.isAvailable(checkIn, checkOut))
+                .and(BookableUnitSpecification.hasPropertyFacilities(propertyFacilities))
+                .and(BookableUnitSpecification.hasUnitFacilities(unitFacilities));
 
-        List<BookableUnit> availableUnits = bookableUnitRepository.searchUnitsByCriteria(
-                city, country, adults, kids, checkIn, checkOut, propFacs, propFacs.size(), unitFacs, unitFacs.size()
-        );
+        List<BookableUnit> availableUnits = bookableUnitRepository.findAll(spec);
 
         List<BookableUnitCardDTO> resultCards = new ArrayList<>();
-
-
         for (BookableUnit unit : availableUnits) {
             try {
                 double totalPrice = calculatePriceForDates(startDate, endDate, unit.getPeriodPriceList());
-
-                if (maxPrice != null && totalPrice > maxPrice) {
-                    continue;
-                }
+                if (maxPrice != null && totalPrice > maxPrice) continue;
 
                 String imageUrl = null;
                 List<PropertyImage> propertyImages = unit.getProperty().getImages();
-
                 if (propertyImages != null && !propertyImages.isEmpty()) {
-                    imageUrl = propertyImages.stream()
+                    String s3Key = propertyImages.stream()
                             .filter(img -> Boolean.TRUE.equals(img.getPrimary()))
-                            .map(PropertyImage::getUrl)
+                            .map(PropertyImage::getS3Key)
                             .findFirst()
-                            .orElse(
-                                    propertyImages.getFirst().getUrl()
-                            );
+                            .orElse(propertyImages.get(0).getS3Key());
+                    imageUrl = s3Service.createPresignedGetUrl(s3Key);
                 }
 
                 resultCards.add(new BookableUnitCardDTO(
-                        unit.getId(),
-                        unit.getProperty().getName(),
-                        unit.getName(),
-                        unit.getProperty().getAddress(),
-                        unit.getProperty().getCity(),
-                        unit.getProperty().getCountry(),
-                        imageUrl,
-                        unit.getSingleBeds(),
-                        unit.getDoubleBeds(),
-                        totalPrice
+                        unit.getPublicId(), unit.getProperty().getName(), unit.getName(),
+                        unit.getProperty().getAddress(), unit.getProperty().getCity(),
+                        unit.getProperty().getCountry(), imageUrl,
+                        unit.getSingleBeds(), unit.getDoubleBeds(), totalPrice
                 ));
-
             } catch (Exception e) {
                 log.warn("Skipping unit {} from search due to pricing error: {}", unit.getId(), e.getMessage());
             }
         }
 
-        return resultCards;
+        int start = (int) pageable.getOffset();
+        if (start >= resultCards.size()) {
+            return new PageImpl<>(List.of(), pageable, resultCards.size());
+        }
+        int end = Math.min(start + pageable.getPageSize(), resultCards.size());
+        return new PageImpl<>(resultCards.subList(start, end), pageable, resultCards.size());
     }
 
     private double calculatePriceForDates(LocalDate start, LocalDate end, List<PeriodPrice> prices) {
@@ -178,58 +174,72 @@ public class BookableUnitService {
 
     @Transactional
     public BookableUnitFacilitiesResponseDTO addFacilitiesToUnit(
-            Long unitId,
+            UUID unitId,
             AddFacilitiesRequestDTO dto
     ) {
 
-        BookableUnit unit = bookableUnitRepository.findById(unitId).orElseThrow(() ->{
+        BookableUnit unit = bookableUnitRepository.findByPublicId(unitId).orElseThrow(() -> {
             log.error("Unit with id {} not found", unitId);
             return new EntityNotFoundException("Unit with id " + unitId + " not found");
         });
 
+        List<Long> requestedIds = dto.facilityIds().stream().distinct().toList();
 
-        List<Long> distinctRequestedIds = dto.facilityIds().stream().distinct().toList();
-
-
-        List<UnitFascillity> unitFascillityList = unitFascilityRepository.findAllById(distinctRequestedIds);
-
-        if (unitFascillityList.size() != distinctRequestedIds.size()) {
-            throw new EntityNotFoundException("One or more facilities not found in the database");
-        }
-
-        List<Long> existingFacilityIds = unit.getUnitFascilityMappings().stream()
+        // 1. Get currently saved mappings
+        List<UnitFascilityMapping> existingMappings = unit.getUnitFascilityMappings();
+        List<Long> existingIds = existingMappings.stream()
                 .map(mapping -> mapping.getUnitFascillity().getId())
                 .toList();
 
-
-        List<UnitFascilityMapping> newMappings = unitFascillityList.stream()
-                .map(uf -> new UnitFascilityMapping(unit, uf))
+        // 2. Determine which mappings to REMOVE (unchecked on frontend)
+        List<UnitFascilityMapping> mappingsToRemove = existingMappings.stream()
+                .filter(mapping -> !requestedIds.contains(mapping.getUnitFascillity().getId()))
                 .toList();
 
-        if (!newMappings.isEmpty()) {
-            unitFascillityMappingRepository.saveAll(newMappings);
+        if (!mappingsToRemove.isEmpty()) {
+            unitFascillityMappingRepository.deleteAll(mappingsToRemove);
+            existingMappings.removeAll(mappingsToRemove); // Update in-memory list
         }
 
-        List<UnitFascilityResponseDTO> allFacilitiesDto = new ArrayList<>();
+        // 3. Determine which IDs to ADD (checked on frontend, not yet in DB)
+        List<Long> idsToAdd = requestedIds.stream()
+                .filter(id -> !existingIds.contains(id))
+                .toList();
 
-        unit.getUnitFascilityMappings().forEach(mapping ->
-                allFacilitiesDto.add(new UnitFascilityResponseDTO(mapping.getUnitFascillity().getId(), mapping.getUnitFascillity().getName()))
-        );
+        if (!idsToAdd.isEmpty()) {
+            List<UnitFascillity> facilitiesToAdd = unitFascilityRepository.findAllById(idsToAdd);
 
-        newMappings.forEach(mapping ->
-                allFacilitiesDto.add(new UnitFascilityResponseDTO(mapping.getUnitFascillity().getId(), mapping.getUnitFascillity().getName()))
-        );
+            if (facilitiesToAdd.size() != idsToAdd.size()) {
+                throw new EntityNotFoundException("One or more facilities not found in the database");
+            }
+
+            List<UnitFascilityMapping> newMappings = facilitiesToAdd.stream()
+                    .map(uf -> new UnitFascilityMapping(unit, uf))
+                    .toList();
+
+            unitFascillityMappingRepository.saveAll(newMappings);
+            existingMappings.addAll(newMappings); // Update in-memory list
+        }
+
+        // 4. Build response from the updated existingMappings list
+        List<UnitFascilityResponseDTO> allFacilitiesDto = existingMappings.stream()
+                .map(mapping -> new UnitFascilityResponseDTO(
+                        mapping.getUnitFascillity().getId(),
+                        mapping.getUnitFascillity().getName()
+                ))
+                .toList();
 
         return new BookableUnitFacilitiesResponseDTO(unitId, allFacilitiesDto);
     }
 
+
     public BookableUnitSummaryDTO getUnit(
-            Long unitId,
+            UUID unitId,
             LocalDate startDate,
             LocalDate endDate
     ) {
 
-        BookableUnit unit = bookableUnitRepository.findById(unitId)
+        BookableUnit unit = bookableUnitRepository.findByPublicId(unitId)
                 .orElseThrow(() -> new EntityNotFoundException("Unit with ID " + unitId + " not found"));
 
         Property property = unit.getProperty();
@@ -242,7 +252,7 @@ public class BookableUnitService {
                 .toList();
 
         PropertyDTO propertyDTO = new PropertyDTO(
-                property.getId(),
+                property.getPublicId(),
                 propertyTypeDTO,
                 property.getName(),
                 property.getDescription(),
@@ -268,10 +278,7 @@ public class BookableUnitService {
                         new UnitFascilityResponseDTO(ufac.getUnitFascillity().getId(),ufac.getUnitFascillity().getName()))
                 .toList();
 
-        List<UnitImageDTO> unitImageDTO = unit.getImages()
-                .stream().map(image ->
-                        new UnitImageDTO(image.getId(), image.getUrl(), image.getPrimary(), image.getSortOrder()))
-                .toList();
+        List<ImageResponseDTO> unitImageDTO = s3Service.getUnitImages(unitId);
 
         double totalPrice = calculatePriceForDates(startDate, endDate, unit.getPeriodPriceList());
 
@@ -293,9 +300,10 @@ public class BookableUnitService {
         );
     }
 
-    public List<BookableUnitAddonsResponseDTO> getUnitAddons(Long unitId, LocalDate startDate, LocalDate endDate) {
 
-        BookableUnit unit = bookableUnitRepository.findById(unitId)
+    public List<BookableUnitAddonsResponseDTO> getUnitAddons(UUID unitId, LocalDate startDate, LocalDate endDate) {
+
+        BookableUnit unit = bookableUnitRepository.findByPublicId(unitId)
                 .orElseThrow(() -> new EntityNotFoundException("Unit with ID " + unitId + " not found"));
 
         List<AddonMapping> addonMappings = unit.getAddonMappings();
@@ -373,8 +381,9 @@ public class BookableUnitService {
         return totalPrice;
     }
 
-    public BookableUnitDetailedCardDTO getUnitInfo(Long unitId) {
-        BookableUnit unit = bookableUnitRepository.findById(unitId)
+
+    public BookableUnitDetailedCardDTO getUnitInfo(UUID unitId) {
+        BookableUnit unit = bookableUnitRepository.findByPublicId(unitId)
                 .orElseThrow(() -> new EntityNotFoundException("Unit with ID " + unitId + " not found"));
 
         Property property = unit.getProperty();
@@ -387,7 +396,7 @@ public class BookableUnitService {
                 .toList();
 
         PropertyDTO propertyDTO = new PropertyDTO(
-                property.getId(),
+                property.getPublicId(),
                 propertyTypeDTO,
                 property.getName(),
                 property.getDescription(),
@@ -413,16 +422,13 @@ public class BookableUnitService {
                         new UnitFascilityResponseDTO(ufac.getUnitFascillity().getId(),ufac.getUnitFascillity().getName()))
                 .toList();
 
-        List<UnitImageDTO> unitImageDTO = unit.getImages()
-                .stream().map(image ->
-                        new UnitImageDTO(image.getId(), image.getUrl(), image.getPrimary(), image.getSortOrder()))
-                .toList();
+        List<ImageResponseDTO> unitImageDTO = s3Service.getUnitImages(unitId);
 
 
         log.info("Unit fetched successfully");
 
         return new BookableUnitDetailedCardDTO(
-                unit.getId(),
+                unit.getPublicId(),
                 propertyDTO,
                 periodPriceDTO,
                 addonDTO,
@@ -437,4 +443,5 @@ public class BookableUnitService {
                 unit.getName()
         );
     }
+
 }

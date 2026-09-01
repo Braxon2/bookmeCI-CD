@@ -1,14 +1,15 @@
 package com.dusanbranovic.bookme.dto.responses;
 
 import java.util.List;
+import java.util.UUID;
 
 public record BookableUnitDetailedCardDTO(
-        Long unitId,
+        UUID unitId,
         PropertyDTO propertyDTO,
         List<PeriodPriceDTO> periodPriceList,
         List<AddonResponseDTO> addonList,
         List<UnitFascilityResponseDTO> unitFascilityDTO,
-        List<UnitImageDTO> images,
+        List<ImageResponseDTO> images,
         int maxCapacity,
         double squareMeters,
         int singleBeds,

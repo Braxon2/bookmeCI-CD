@@ -9,13 +9,17 @@ public class UnitImage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "s3_key", nullable = false, unique = true, length = 1024)
     private String s3Key;
-    private String url;
-    private Boolean isPrimary;
-    private Integer sortOrder;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "unit_id")
+    @Column(name = "is_primary", nullable = false)
+    private boolean primary;
+
+    @Column(name = "sort_order", nullable = false)
+    private int sortOrder;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "unit_id", nullable = false)
     private BookableUnit bookableUnit;
 
     public UnitImage() {
@@ -23,14 +27,12 @@ public class UnitImage {
 
     public UnitImage(
             String s3Key,
-            String url,
-            Boolean isPrimary,
+            Boolean primary,
             Integer sortOrder,
             BookableUnit bookableUnit
     ) {
         this.s3Key = s3Key;
-        this.url = url;
-        this.isPrimary = isPrimary;
+        this.primary = primary;
         this.sortOrder = sortOrder;
         this.bookableUnit = bookableUnit;
     }
@@ -51,20 +53,12 @@ public class UnitImage {
         this.s3Key = s3Key;
     }
 
-    public String getUrl() {
-        return url;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
     public Boolean getPrimary() {
-        return isPrimary;
+        return primary;
     }
 
     public void setPrimary(Boolean primary) {
-        isPrimary = primary;
+        primary = primary;
     }
 
     public Integer getSortOrder() {

@@ -1,16 +1,28 @@
 package com.dusanbranovic.bookme.repository;
 
 import com.dusanbranovic.bookme.models.BookableUnit;
+import com.dusanbranovic.bookme.models.Property;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @Repository
-public interface BookableUnitRepository extends JpaRepository<BookableUnit,Long> {
+public interface BookableUnitRepository extends JpaRepository<BookableUnit,Long>, JpaSpecificationExecutor<BookableUnit> {
+
+    Optional<BookableUnit> findByPublicId(UUID publicId);
+
+    boolean existsByPublicId(UUID publicId);
 
     @Query("""
 SELECT bu
@@ -55,4 +67,16 @@ AND (
             @Param("unitFacs") List<Long> unitFacs,
             @Param("unitFacCount") long unitFacCount
     );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT b
+        FROM BookableUnit b
+        WHERE b.publicId = :publicId
+    """)
+    Optional<BookableUnit> findByPublicIdForUpdate(
+            @Param("publicId") UUID publicId
+    );
+
+    Page<BookableUnit> findByProperty_PublicId(UUID publicId, Pageable pageable);
 }

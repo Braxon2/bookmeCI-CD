@@ -12,11 +12,12 @@ const ListingProperties = () => {
   if (!user) {
     return <p>Loading...</p>;
   }
+  // console.log(properties);
   return (
     <div className="pagep">
       <div className="property-list">
         {properties?.map((p) => (
-          <PropertyCard key={p.id} property={p} />
+          <PropertyCard key={p.publicId} property={p} />
         ))}
       </div>
     </div>

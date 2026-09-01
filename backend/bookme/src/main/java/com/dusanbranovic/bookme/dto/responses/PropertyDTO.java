@@ -2,9 +2,10 @@ package com.dusanbranovic.bookme.dto.responses;
 
 
 import java.util.List;
+import java.util.UUID;
 
 public record PropertyDTO(
-        Long id,
+        UUID publicId,
         PropertyTypeDTO propertyTypeDTO,
         String name,
         String description,

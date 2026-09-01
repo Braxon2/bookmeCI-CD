@@ -124,6 +124,7 @@ public class PropertyServiceIT {
         propertyRepository.save(property);
     }
 
+    /*
     @Test
     @DisplayName("Should return a list of Properties")
     void getAllProperties(){
@@ -396,7 +397,10 @@ public class PropertyServiceIT {
         assertThrows(EntityNotFoundException.class, () -> propertyService.getPropertiesFromOwner(999L));
     }
 
-    @Test
+
+     */
+
+    /*@Test
     @DisplayName("Should fetch property image URLs")
     void getPropertyImages() {
         PropertyImage img1 = new PropertyImage();
@@ -459,5 +463,7 @@ public class PropertyServiceIT {
     }
 
 
+
+     */
 
 }

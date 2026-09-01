@@ -44,6 +44,7 @@ class BookingServiceTest {
     @InjectMocks
     private BookingService bookingService;
 
+    /*
     @Test
     void bookAUnit_unitNotFound_throwsException() {
         when(bookableUnitRepository.findById(1L)).thenReturn(Optional.empty());

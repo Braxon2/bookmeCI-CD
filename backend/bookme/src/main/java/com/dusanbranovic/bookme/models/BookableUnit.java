@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 public class BookableUnit {
@@ -12,6 +13,14 @@ public class BookableUnit {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(
+            name = "public_id",
+            nullable = false,
+            unique = true,
+            updatable = false
+    )
+    private UUID publicId = UUID.randomUUID();
 
     @ManyToOne
     @JoinColumn(name = "property_id")
@@ -179,6 +188,10 @@ public class BookableUnit {
         this.unitFascilityMappings = unitFascilityMappings;
     }
 
+    public void setPublicId(UUID publicId) {
+        this.publicId = publicId;
+    }
+
     public List<UnitImage> getImages() {
         return images;
     }
@@ -190,5 +203,9 @@ public class BookableUnit {
     public void addPeriodPrice(PeriodPrice periodPrice) {
         this.periodPriceList.add(periodPrice);
         periodPrice.setBookableUnit(this);
+    }
+
+    public UUID getPublicId() {
+        return publicId;
     }
 }

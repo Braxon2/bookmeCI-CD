@@ -13,7 +13,7 @@ const AddUnitFacilityToUnit = () => {
 
   const { unitId } = useParams();
 
-  const { data: unit } = useFetch(`${apiURL}/api/units/${unitId}`);
+  const { data: unit } = useFetch(`${apiURL}/api/units/${unitId}/info`);
   const faciltiesFromUnit = unit?.unitFascilityDTO;
 
   const handleSubmit = async (e) => {

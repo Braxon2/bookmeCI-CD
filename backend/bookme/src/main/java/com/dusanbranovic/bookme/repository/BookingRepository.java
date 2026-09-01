@@ -8,19 +8,20 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     @Query("""
 SELECT COUNT(b) FROM Booking b
-WHERE b.bookableUnit.id = :unitId
+WHERE b.bookableUnit.publicId = :unitId
 AND b.status <> 'CANCELLED'
 AND :start < b.checkOut
 AND :end > b.checkIn
 """)
     long countOverlappingBookings(
-            @Param("unitId") Long unitId,
+            @Param("unitId") UUID unitId,
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );

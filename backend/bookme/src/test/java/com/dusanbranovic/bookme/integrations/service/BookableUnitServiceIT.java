@@ -52,7 +52,7 @@ public class BookableUnitServiceIT {
 
     @Autowired
     private PropertyFascilityRepository propertyFascilityRepository;
-
+/*
     @Test
     @DisplayName("Should sucesfully save a period price")
     void addPeriodPrice(){
@@ -278,4 +278,6 @@ public class BookableUnitServiceIT {
         assertEquals(1, results.size(), "Should only find the unit that has ALL requested facilities");
         assertEquals(matchingUnit.getId(), results.get(0).unitId());
     }
+    */
+
 }

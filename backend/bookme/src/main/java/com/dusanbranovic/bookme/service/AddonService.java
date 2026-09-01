@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,9 +49,9 @@ public class AddonService {
         this.addonMappingRepository = addonMappingRepository;
     }
 
-    public AddonToAddResponseDTO addAddonToUnit(Long unitId, AddonToAddRequestDTO dto) {
+    public AddonToAddResponseDTO addAddonToUnit(UUID unitId, AddonToAddRequestDTO dto) {
 
-        BookableUnit unit = bookableUnitRepository.findById(unitId).orElseThrow(() -> {
+        BookableUnit unit = bookableUnitRepository.findByPublicId(unitId).orElseThrow(() -> {
             log.error("Unit not found");
             return new EntityNotFoundException("Unit with id " + unitId + " not found");
         });
@@ -87,12 +88,12 @@ public class AddonService {
 
 
     public AddonPeriodPriceResponseDTO addAddonPeriodPrice(
-            Long unitId,
+            UUID unitId,
             Long addonId,
             PeriodPriceAddonRequestDTO dto
     ) {
 
-        BookableUnit unit = bookableUnitRepository.findById(unitId).orElseThrow(() -> {
+        BookableUnit unit = bookableUnitRepository.findByPublicId(unitId).orElseThrow(() -> {
             log.error("Unit not found");
             return new EntityNotFoundException("Unit with id " + unitId + " not found");
         });
@@ -156,9 +157,9 @@ public class AddonService {
 
     }
 
-    public boolean changeBillingType(Long unitId, Long addonId, BillingTypeRequestDTO dto) {
+    public boolean changeBillingType(UUID unitId, Long addonId, BillingTypeRequestDTO dto) {
 
-        BookableUnit unit = bookableUnitRepository.findById(unitId).orElseThrow(() -> {
+        BookableUnit unit = bookableUnitRepository.findByPublicId(unitId).orElseThrow(() -> {
             log.error("Unit not found");
             return new EntityNotFoundException("Unit with id " + unitId + " not found");
         });
@@ -178,9 +179,9 @@ public class AddonService {
         return addonMapping.isPerNight();
     }
 
-    public List<PeriodPriceAddonResponseDTO> getPeriodPrices(Long unitId, Long addonId) {
+    public List<PeriodPriceAddonResponseDTO> getPeriodPrices(UUID unitId, Long addonId) {
 
-        BookableUnit unit = bookableUnitRepository.findById(unitId).orElseThrow(() -> {
+        BookableUnit unit = bookableUnitRepository.findByPublicId(unitId).orElseThrow(() -> {
             log.error("Unit not found");
             return new EntityNotFoundException("Unit with id " + unitId + " not found");
         });

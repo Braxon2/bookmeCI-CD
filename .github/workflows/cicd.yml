@@ -1,5 +1,6 @@
 name: Bookme CI/CD
 
+
 on:
   push:
     branches: [main]
@@ -36,12 +37,15 @@ jobs:
 
       - name: Build and Test Backend
         working-directory: ./backend/bookme
+
         env:
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/bookme
           SPRING_DATASOURCE_USERNAME: ${{ secrets.DB_USERNAME }}
           SPRING_DATASOURCE_PASSWORD: ${{ secrets.DB_PASSWORD }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_S3_REGION: ${{ secrets.AWS_S3_REGION }}
+          AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME }}
         run: mvn clean install -DskipTests
 
   frontend-build:

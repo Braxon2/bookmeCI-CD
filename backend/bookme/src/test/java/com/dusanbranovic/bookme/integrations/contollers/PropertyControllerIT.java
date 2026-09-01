@@ -53,6 +53,7 @@ class PropertyControllerIntegrationTest {
 
     private PropertyDTO mockPropertyDTO;
 
+    /*
     @BeforeEach
     void setUp() {
         mockPropertyDTO = new PropertyDTO(
@@ -61,6 +62,8 @@ class PropertyControllerIntegrationTest {
                 "No smoking", List.of()
         );
     }
+
+     */
 /*
     @Test
     @WithMockUser

@@ -9,14 +9,20 @@ public class PropertyImage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "s3_key", nullable = false, unique = true, length = 1024)
     private String s3Key;
-    private String url;
-    private Boolean isPrimary;
-    private Integer sortOrder;
+
+    @Column(name = "is_primary", nullable = false)
+    private boolean primary;
+
+    @Column(name = "sort_order", nullable = false)
+    private int sortOrder;
+
+    @Column(name = "content_type", nullable = false)
     private String contentType;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "property_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "property_id", nullable = false)
     private Property property;
 
     public PropertyImage() {
@@ -24,15 +30,13 @@ public class PropertyImage {
 
     public PropertyImage(
             String s3Key,
-            String url,
-            Boolean isPrimary,
+            Boolean primary,
             Integer sortOrder,
             String contentType,
             Property property
     ) {
         this.s3Key = s3Key;
-        this.url = url;
-        this.isPrimary = isPrimary;
+        this.primary = primary;
         this.sortOrder = sortOrder;
         this.contentType = contentType;
         this.property = property;
@@ -53,21 +57,14 @@ public class PropertyImage {
     public void setS3Key(String s3Key) {
         this.s3Key = s3Key;
     }
-
-    public String getUrl() {
-        return url;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
-    }
+    
 
     public Boolean getPrimary() {
-        return isPrimary;
+        return primary;
     }
 
     public void setPrimary(Boolean primary) {
-        isPrimary = primary;
+        primary = primary;
     }
 
     public Integer getSortOrder() {

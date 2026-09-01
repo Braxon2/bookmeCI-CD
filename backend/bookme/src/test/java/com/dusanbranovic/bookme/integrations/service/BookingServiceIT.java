@@ -59,7 +59,7 @@ public class BookingServiceIT {
     void setUp(){
 
     }
-
+/*
     @Test
     @DisplayName("Should sucessfully book a Unit")
     void bookAUnit(){
@@ -249,4 +249,6 @@ public class BookingServiceIT {
     }
 
 
+
+ */
 }

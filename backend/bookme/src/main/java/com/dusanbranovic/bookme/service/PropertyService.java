@@ -3,10 +3,7 @@ package com.dusanbranovic.bookme.service;
 import com.dusanbranovic.bookme.dto.requests.BookableUnitRequestDTO;
 import com.dusanbranovic.bookme.dto.requests.PropertyRequestDTO;
 import com.dusanbranovic.bookme.dto.requests.ReviewRequestDTO;
-import com.dusanbranovic.bookme.dto.responses.BookableUnitsResponseDTO;
-import com.dusanbranovic.bookme.dto.responses.FascilityResponseDTO;
-import com.dusanbranovic.bookme.dto.responses.PropertyDTO;
-import com.dusanbranovic.bookme.dto.responses.ReviewResponseDTO;
+import com.dusanbranovic.bookme.dto.responses.*;
 import com.dusanbranovic.bookme.exceptions.EntityNotFoundException;
 import com.dusanbranovic.bookme.mappers.BookableUnitMapper;
 import com.dusanbranovic.bookme.mappers.PropertyMapper;
@@ -16,6 +13,8 @@ import com.dusanbranovic.bookme.models.*;
 import com.dusanbranovic.bookme.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -23,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,6 +31,7 @@ public class PropertyService {
     private final PropertyRepository propertyRepository;
     private final UserRepository userRepository;
     private final PropertyTypeRepository propertyTypeRepository;
+    private final PropertyImageRepository propertyImageRepository;
     private final FasiliityRepository fasiliityRepository;
     private final PropertyFascilityRepository propertyFascilityRepository;
 
@@ -48,7 +49,7 @@ public class PropertyService {
     public PropertyService(
             PropertyRepository propertyRepository,
             UserRepository userRepository,
-            PropertyTypeRepository propertyTypeRepository,
+            PropertyTypeRepository propertyTypeRepository, PropertyImageRepository propertyImageRepository,
             FasiliityRepository fasiliityRepository,
             PropertyFascilityRepository propertyFascilityRepository,
             PropertyMapper propertyMapper,
@@ -61,6 +62,7 @@ public class PropertyService {
         this.propertyRepository = propertyRepository;
         this.userRepository = userRepository;
         this.propertyTypeRepository = propertyTypeRepository;
+        this.propertyImageRepository = propertyImageRepository;
         this.fasiliityRepository = fasiliityRepository;
         this.propertyFascilityRepository = propertyFascilityRepository;
         this.propertyMapper = propertyMapper;
@@ -79,9 +81,9 @@ public class PropertyService {
                 .collect(Collectors.toList());
     }
 
-    public PropertyDTO getProperty(Long pid) {
+    public PropertyDTO getProperty(UUID pid) {
 
-        Property property = propertyRepository.findById(pid).orElseThrow(() ->{
+        Property property = propertyRepository.findByPublicId(pid).orElseThrow(() ->{
             log.error("Property not found");
             return new EntityNotFoundException("Property with id " + pid + " not found");
         });
@@ -151,25 +153,40 @@ public class PropertyService {
     }
 
 
-    public List<BookableUnitsResponseDTO> getAllUnits(Long pid) {
-        Property property = propertyRepository.findById(pid).orElseThrow(() ->{
-            log.error("Property not found");
-            return new EntityNotFoundException("Property with id " + pid + " not found");
-        });
+//    public List<BookableUnitsResponseDTO> getAllUnits(UUID pid) {
+//        Property property = propertyRepository.findByPublicId(pid).orElseThrow(() ->{
+//            log.error("Property not found");
+//            return new EntityNotFoundException("Property with id " + pid + " not found");
+//        });
+//
+//        if(property.getUnits().isEmpty()) log.warn("Property have no units");
+//        else log.info("Units successfully fetched");
+//
+//        return property.getUnits().
+//                stream().
+//                map(bookableUnitMapper::toDTO)
+//                .collect(Collectors.toList());
+//
+//    }
 
-        if(property.getUnits().isEmpty()) log.warn("Property have no units");
+    // Service
+    public Page<BookableUnitsResponseDTO> getAllUnits(UUID pid, Pageable pageable) {
+        if (!propertyRepository.existsByPublicId(pid)) {
+            log.error("Property not found");
+            throw new EntityNotFoundException("Property with id " + pid + " not found");
+        }
+
+        Page<BookableUnit> units = bookableUnitRepository.findByProperty_PublicId(pid, pageable);
+
+        if (units.isEmpty()) log.warn("Property has no units");
         else log.info("Units successfully fetched");
 
-        return property.getUnits().
-                stream().
-                map(bookableUnitMapper::toDTO)
-                .collect(Collectors.toList());
-
+        return units.map(bookableUnitMapper::toDTO);
     }
 
-    public BookableUnitsResponseDTO addUnit(Long pid, BookableUnitRequestDTO dto) {
+    public BookableUnitsResponseDTO addUnit(UUID pid, BookableUnitRequestDTO dto) {
 
-        Property property = propertyRepository.findById(pid).orElseThrow(() ->{
+        Property property = propertyRepository.findByPublicId(pid).orElseThrow(() ->{
             log.error("Property not found");
             return new EntityNotFoundException("Property with id " + pid + " not found");
         });
@@ -258,6 +275,8 @@ public class PropertyService {
                 .collect(Collectors.toList());
     }
 
+
+/*
     public List<String> getPropertyImages(Long pid) {
         Property property = propertyRepository.findById(pid).orElseThrow(() ->{
             log.error("Property not found");
@@ -294,4 +313,6 @@ public class PropertyService {
 
         return thumbnailUrl;
     }
+
+ */
 }

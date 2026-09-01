@@ -79,7 +79,7 @@ const SearchWithfilter = () => {
       });
 
       const result = await response.json();
-      setUnits(result);
+      setUnits(result.content);
     } catch (err) {
       console.error(err);
     }

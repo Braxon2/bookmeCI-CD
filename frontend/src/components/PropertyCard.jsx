@@ -7,17 +7,17 @@ const PropertyCard = ({ property }) => {
   const navigate = useNavigate();
 
   const navigateToUnits = () => {
-    navigate(`/properties/${property.id}/units`);
+    navigate(`/properties/${property.publicId}/units`);
   };
 
   const navigateToPropertyImages = () => {
-    navigate(`/properties/${property.id}/images`);
+    navigate(`/properties/${property.publicId}/images`);
   };
 
   const { data: thumbnail } = useFetch(
-    `${apiURL}/api/properties/${property.id}/thumbnail`,
+    `${apiURL}/api/properties/${property.publicId}/thumbnail`,
   );
-  console.log("Thumbnail data:", thumbnail);
+
   return (
     <div className="property-card">
       <div className="property-image">

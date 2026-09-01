@@ -3,16 +3,18 @@ import BookableUnit from "../components/BookableUnit";
 import { useFetch } from "../hooks/useFetch";
 import "./styles/ListingUnits.css";
 const ListingUnits = () => {
-  const { propertyId } = useParams();
+  const { publicId } = useParams();
   const apiURL = import.meta.env.VITE_API_URL || "";
 
-  const { data: units } = useFetch(
-    propertyId ? `${apiURL}/api/properties/${propertyId}/units` : null,
+  const { data: unitsResponse } = useFetch(
+    publicId ? `${apiURL}/api/properties/${publicId}/units` : null,
   );
+
+  const units = unitsResponse?.content || [];
 
   const navigate = useNavigate();
   const navigateToAddUnitPage = () => {
-    navigate(`/properties/${propertyId}/add-unit`);
+    navigate(`/properties/${publicId}/add-unit`);
   };
   return (
     <div className="pageb">

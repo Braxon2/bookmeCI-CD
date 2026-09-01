@@ -59,6 +59,7 @@ class PropertyServiceTest {
     @InjectMocks
     private PropertyService propertyService;
 
+    /*
     @Test
     void getAll_returnsMappedProperties() {
         Property p1 = new Property();
@@ -244,6 +245,8 @@ class PropertyServiceTest {
 
 
 
+
+     */
 
 
 

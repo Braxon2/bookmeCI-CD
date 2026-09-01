@@ -7,14 +7,15 @@ import { useParams } from "react-router-dom";
 import useImageUpload from "../hooks/useImageUpload";
 const PropertyImages = () => {
   const apiURL = import.meta.env.VITE_API_URL || "";
-  const { propertyId } = useParams();
+  const { publicId } = useParams();
   const fileInputRef = useRef(null);
 
+  console.log(publicId);
   const {
     data,
     loading: fetchLoading,
     error: fetchError,
-  } = useFetch(`${apiURL}/api/properties/${propertyId}/images`);
+  } = useFetch(`${apiURL}/api/properties/${publicId}/images`);
 
   const [images, setImages] = useState([]);
   const [imageFile, setImageFile] = useState(null);
@@ -26,12 +27,12 @@ const PropertyImages = () => {
       setImages(data);
     }
   }, [data]);
-
+  console.log(images);
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!imageFile) return;
 
-    const url = `${apiURL}/api/properties/${propertyId}/images`;
+    const url = `${apiURL}/api/properties/${publicId}/images`;
     const newImageUrl = await uploadImage(url, imageFile);
 
     if (newImageUrl) {
@@ -70,7 +71,7 @@ const PropertyImages = () => {
           {images?.map((image, index) => (
             <div className="image-item" key={index}>
               <img
-                src={image || notFoundImage}
+                src={image.url || notFoundImage}
                 alt={`Property image ${index + 1}`}
               />
             </div>
