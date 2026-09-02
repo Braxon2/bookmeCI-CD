@@ -1,239 +1,184 @@
 import { DatePickerInput } from "@mantine/dates";
 import { useEffect, useState } from "react";
-import { useFetch } from "../hooks/useFetch";
+import { useSearchParams } from "react-router-dom";
 import BookableUnitCard from "../components/BookableUnitCard";
 import GuestDropdown from "../components/GuestDropdown";
-import { useSearchParams } from "react-router-dom";
+import { useFetch } from "../hooks/useFetch";
 import "./styles/SearchWithFilters.css";
+
+const parseIds = (value) => value ? value.split(",").map(Number).filter(Boolean) : [];
 
 const SearchWithfilter = () => {
   const apiURL = import.meta.env.VITE_API_URL || "";
   const [searchParams, setSearchParams] = useSearchParams();
-
   const [city, setCity] = useState(searchParams.get("city") || "");
   const [country, setCountry] = useState(searchParams.get("country") || "");
-  const [adults, setAdults] = useState(
-    parseInt(searchParams.get("adults")) || 1,
-  );
-  const [kids, setKids] = useState(parseInt(searchParams.get("kids")) || 0);
-
-  const initialStartDate = searchParams.get("startDate") || null;
-  const initialEndDate = searchParams.get("endDate") || null;
-  const [value, setValue] = useState([initialStartDate, initialEndDate]);
-
-  const [maxPrice, setMaxPrice] = useState("");
-  const [selectedPropFacs, setSelectedPropFacs] = useState([]);
-  const [selectedUnitFacs, setSelectedUnitFacs] = useState([]);
+  const [adults, setAdults] = useState(Number(searchParams.get("adults")) || 1);
+  const [kids, setKids] = useState(Number(searchParams.get("kids")) || 0);
+  const [dates, setDates] = useState([
+    searchParams.get("startDate") || null,
+    searchParams.get("endDate") || null,
+  ]);
+  const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
+  const [selectedPropFacs, setSelectedPropFacs] = useState(parseIds(searchParams.get("propertyFacilities")));
+  const [selectedUnitFacs, setSelectedUnitFacs] = useState(parseIds(searchParams.get("unitFacilities")));
   const [units, setUnits] = useState([]);
+  const [totalResults, setTotalResults] = useState(0);
+  const [isSearching, setIsSearching] = useState(true);
+  const [searchError, setSearchError] = useState("");
 
   const { data: propFacilities } = useFetch(`${apiURL}/api/fascilities`);
   const { data: unitFacilities } = useFetch(`${apiURL}/api/unit-fascilities`);
+  const queryString = searchParams.toString();
 
   useEffect(() => {
+    const controller = new AbortController();
+    const fetchUnits = async () => {
+      const params = new URLSearchParams(queryString);
+      if (!params.get("startDate") || !params.get("endDate")) {
+        setUnits([]);
+        setTotalResults(0);
+        setIsSearching(false);
+        setSearchError("Choose check-in and check-out dates to see availability.");
+        return;
+      }
+
+      setIsSearching(true);
+      setSearchError("");
+      try {
+        const response = await fetch(`${apiURL}/api/units/search?${params.toString()}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
+            "Content-Type": "application/json",
+          },
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error("We couldn't complete this search. Please try again.");
+        const result = await response.json();
+        setUnits(result.content || []);
+        setTotalResults(result.totalElements ?? result.content?.length ?? 0);
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          setUnits([]);
+          setTotalResults(0);
+          setSearchError(error.message);
+        }
+      } finally {
+        if (!controller.signal.aborted) setIsSearching(false);
+      }
+    };
     fetchUnits();
-  }, [searchParams]);
+    return () => controller.abort();
+  }, [apiURL, queryString]);
 
-  const handlePropFacToggle = (id) => {
-    setSelectedPropFacs((prev) =>
-      prev.includes(id) ? prev.filter((facId) => facId !== id) : [...prev, id],
-    );
-  };
+  const toggleId = (id, setter) => setter((current) =>
+    current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
+  );
 
-  const handleUnitFacToggle = (id) => {
-    setSelectedUnitFacs((prev) =>
-      prev.includes(id) ? prev.filter((facId) => facId !== id) : [...prev, id],
-    );
-  };
-
-  const handleDateChange = (dates) => {
-    setValue(dates);
-  };
-
-  const fetchUnits = async () => {
-    const qCity = searchParams.get("city") || "";
-    const qCountry = searchParams.get("country") || "";
-    const qAdults = searchParams.get("adults") || 1;
-    const qKids = searchParams.get("kids") || 0;
-    const qStart = searchParams.get("startDate") || "";
-    const qEnd = searchParams.get("endDate") || "";
-    const qMaxPrice = searchParams.get("maxPrice") || "";
-    const qPropFacs = searchParams.get("propertyFacilities") || "";
-    const qUnitFacs = searchParams.get("unitFacilities") || "";
-
-    let url = `${apiURL}/api/units/search?city=${qCity}&country=${qCountry}&adults=${qAdults}&kids=${qKids}`;
-
-    if (qStart) url += `&startDate=${qStart}`;
-    if (qEnd) url += `&endDate=${qEnd}`;
-    if (qMaxPrice) url += `&maxPrice=${qMaxPrice}`;
-    if (qPropFacs) url += `&propertyFacilities=${qPropFacs}`;
-    if (qUnitFacs) url += `&unitFacilities=${qUnitFacs}`;
-
-    try {
-      const token = localStorage.getItem("jwtToken");
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      const result = await response.json();
-      setUnits(result.content);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const createParams = (includeFilters = true) => {
     const params = new URLSearchParams();
-    if (city) params.set("city", city);
-    if (country) params.set("country", country);
+    if (city.trim()) params.set("city", city.trim());
+    if (country.trim()) params.set("country", country.trim());
     params.set("adults", adults);
     params.set("kids", kids);
-
-    if (value[0]) params.set("startDate", value[0]);
-    if (value[1]) params.set("endDate", value[1]);
-
-    if (maxPrice) params.set("maxPrice", maxPrice);
-    if (selectedPropFacs.length > 0)
-      params.set("propertyFacilities", selectedPropFacs.join(","));
-    if (selectedUnitFacs.length > 0)
-      params.set("unitFacilities", selectedUnitFacs.join(","));
-
-    setSearchParams(params);
+    if (dates[0]) params.set("startDate", dates[0]);
+    if (dates[1]) params.set("endDate", dates[1]);
+    if (includeFilters && maxPrice) params.set("maxPrice", maxPrice);
+    if (includeFilters && selectedPropFacs.length) params.set("propertyFacilities", selectedPropFacs.join(","));
+    if (includeFilters && selectedUnitFacs.length) params.set("unitFacilities", selectedUnitFacs.join(","));
+    return params;
   };
 
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    setSearchParams(createParams());
+  };
+
+  const clearFilters = () => {
+    setMaxPrice("");
+    setSelectedPropFacs([]);
+    setSelectedUnitFacs([]);
+    setSearchParams(createParams(false));
+  };
+
+  const filterCount = selectedPropFacs.length + selectedUnitFacs.length + (maxPrice ? 1 : 0);
+  const destination = [searchParams.get("city"), searchParams.get("country")].filter(Boolean).join(", ");
+
   return (
-    <div className="page-wrapper">
-      <div className="layout-container">
-        <aside className="sidebar">
-          <form onSubmit={handleSubmit} className="search-form">
-            <div className="search-box">
-              <h3>Search</h3>
+    <main className="filtered-search-page">
+      <div className="filtered-search-shell">
+        <header className="filtered-search-heading">
+          <div><span>Available stays</span><h1>{destination || "Search results"}</h1></div>
+          <p>Refine your search to find the place that fits your trip.</p>
+        </header>
 
-              <div className="input-group">
-                <label>Destination / City</label>
-                <input
-                  type="text"
-                  placeholder="Where are you going?"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                />
-              </div>
+        <form className="filtered-search-bar" onSubmit={handleSubmit}>
+          <label><span>City</span><input value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" /></label>
+          <label><span>Country</span><input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Country" /></label>
+          <label className="filtered-date-field"><span>Dates</span><DatePickerInput type="range" valueFormat="DD MMM YYYY"
+            value={dates} onChange={setDates} placeholder="Choose dates" minDate={new Date()} /></label>
+          <div className="filtered-guest-field"><span>Guests</span><GuestDropdown adults={adults} setAdults={setAdults} kids={kids} setKids={setKids} /></div>
+          <button type="submit">Update search</button>
+        </form>
 
-              <div className="input-group">
-                <label>Country</label>
-                <input
-                  type="text"
-                  placeholder="Country"
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                />
-              </div>
-
-              <div className="input-group">
-                <label>Check-in / Check-out</label>
-                <DatePickerInput
-                  valueFormat="YYYY MMMM DD"
-                  type="range"
-                  placeholder="Choose dates"
-                  value={value}
-                  onChange={handleDateChange}
-                  className="date-picker-custom"
-                />
-              </div>
-
-              <div className="input-group">
-                <label>Guests</label>
-                <GuestDropdown
-                  adults={adults}
-                  setAdults={setAdults}
-                  kids={kids}
-                  setKids={setKids}
-                />
-              </div>
-
-              <div className="input-group">
-                <label>Max Price</label>
-                <input
-                  type="number"
-                  placeholder="Set max budget"
-                  value={maxPrice}
-                  onChange={(e) => setMaxPrice(e.target.value)}
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-
-              <button type="submit" className="search-btn">
-                Search
-              </button>
+        <div className="filtered-search-layout">
+          <aside className="filter-panel">
+            <div className="filter-panel-heading">
+              <div><span>Refine results</span><h2>Filters</h2></div>
+              {filterCount > 0 && <button type="button" onClick={clearFilters}>Clear {filterCount}</button>}
             </div>
 
-            <div className="filter-box">
-              <h3>Filter by:</h3>
-              <div className="filter-section">
-                <p className="filter-title">Property Facilities</p>
-                <div className="checkbox-list">
-                  {propFacilities?.map((fac) => (
-                    <label key={`prop-${fac.id}`} className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        checked={selectedPropFacs.includes(fac.id)}
-                        onChange={() => handlePropFacToggle(fac.id)}
-                      />
-                      <span className="checkmark"></span>
-                      {fac.name}
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="filter-section">
-                <p className="filter-title">Unit Facilities</p>
-                <div className="checkbox-list">
-                  {unitFacilities?.map((fac) => (
-                    <label key={`unit-${fac.id}`} className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        checked={selectedUnitFacs.includes(fac.id)}
-                        onChange={() => handleUnitFacToggle(fac.id)}
-                      />
-                      <span className="checkmark"></span>
-                      {fac.name}
-                    </label>
-                  ))}
-                </div>
-              </div>
+            <div className="filter-group">
+              <label htmlFor="max-price">Maximum total price</label>
+              <div className="filter-price-input"><span>€</span><input id="max-price" type="number" min="0" step="1"
+                placeholder="Any price" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} /></div>
             </div>
-          </form>
-        </aside>
 
-        <main className="results-content">
-          <div className="results-header">
-            <h2>
-              {units
-                ? `${units.length} properties found`
-                : "Searching properties..."}
-            </h2>
-          </div>
+            <div className="filter-group">
+              <h3>Property amenities</h3>
+              <div className="filter-options">{propFacilities?.map((facility) => (
+                <label key={`property-${facility.id}`} className="filter-option">
+                  <input type="checkbox" checked={selectedPropFacs.includes(facility.id)}
+                    onChange={() => toggleId(facility.id, setSelectedPropFacs)} />
+                  <span className="filter-check" aria-hidden="true">✓</span><span>{facility.name}</span>
+                </label>
+              ))}</div>
+            </div>
 
-          <div className="units-list">
-            {units?.map((unit) => (
-              <BookableUnitCard
-                key={unit.unitId}
-                bookableUnit={unit}
-                checkIn={value[0]}
-                checkOut={value[1]}
-              />
-            ))}
-          </div>
-        </main>
+            <div className="filter-group">
+              <h3>Inside the unit</h3>
+              <div className="filter-options">{unitFacilities?.map((facility) => (
+                <label key={`unit-${facility.id}`} className="filter-option">
+                  <input type="checkbox" checked={selectedUnitFacs.includes(facility.id)}
+                    onChange={() => toggleId(facility.id, setSelectedUnitFacs)} />
+                  <span className="filter-check" aria-hidden="true">✓</span><span>{facility.name}</span>
+                </label>
+              ))}</div>
+            </div>
+            <button className="filter-apply-button" type="button" onClick={() => setSearchParams(createParams())}>Apply filters</button>
+          </aside>
+
+          <section className="filtered-results" aria-live="polite">
+            <div className="filtered-results-heading">
+              <div><span>{isSearching ? "Searching" : `${totalResults} ${totalResults === 1 ? "stay" : "stays"}`}</span>
+                <h2>{isSearching ? "Finding the best matches..." : "Places available for your trip"}</h2></div>
+              {filterCount > 0 && <span className="active-filter-badge">{filterCount} active</span>}
+            </div>
+
+            {isSearching && <div className="search-results-loading"><span /><p>Checking live availability...</p></div>}
+            {!isSearching && searchError && <div className="search-results-state"><h3>Search needs an update</h3><p>{searchError}</p></div>}
+            {!isSearching && !searchError && units.length === 0 && <div className="search-results-state">
+              <h3>No exact matches yet</h3><p>Try raising your price limit or selecting fewer amenities.</p>
+              {filterCount > 0 && <button type="button" onClick={clearFilters}>Clear filters</button>}
+            </div>}
+            {!isSearching && units.length > 0 && <div className="filtered-units-list">{units.map((unit) => (
+              <BookableUnitCard key={unit.unitId} bookableUnit={unit}
+                checkIn={searchParams.get("startDate")} checkOut={searchParams.get("endDate")} />
+            ))}</div>}
+          </section>
+        </div>
       </div>
-    </div>
+    </main>
   );
 };
 

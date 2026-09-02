@@ -1,12 +1,9 @@
 import { useState } from "react";
-import { useAuth } from "../context/AuthContext";
 
 const usePost = () => {
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  const { user } = useAuth();
 
   const post = async (link, body) => {
     setIsLoading(true);
@@ -22,14 +19,13 @@ const usePost = () => {
         body: JSON.stringify(body),
       });
 
-      const json = await res.json();
+      const json = await res.json().catch(() => ({
+        message: "An unexpected error occurred",
+      }));
 
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({
-          message: "An unexpected error occurred",
-        }));
         throw new Error(
-          errorData.message || `Error ${res.status}: ${res.statusText}`,
+          json.message || `Error ${res.status}: ${res.statusText}`,
         );
       }
 

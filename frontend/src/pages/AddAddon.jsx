@@ -1,68 +1,13 @@
-import { useEffect, useState } from "react";
-import { useFetch } from "../hooks/useFetch";
-import "./styles/ListingFascilities.css";
-import usePost from "../hooks/usePost";
-import { useLocation, useParams } from "react-router-dom";
-const AddAddon = () => {
-  const apiURL = import.meta.env.VITE_API_URL || "";
-  const { data } = useFetch(`${apiURL}/api/addons`);
-  const [addons, setAddons] = useState([]);
-  const [selectedFacilties, setSelectedFacilties] = useState([]);
+import AdminCatalogManager from "../components/AdminCatalogManager";
 
-  const [addonName, setAddonName] = useState("");
-
-  const { error, post } = usePost();
-
-  const { unitId } = useParams();
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    console.log(addonName);
-
-    const res = await post(`${apiURL}/api/addons`, {
-      name: addonName,
-    });
-
-    if (res && res.id) {
-      setAddons((prev) => [...prev, res]);
-      setAddonName("");
-    }
-  };
-
-  useEffect(() => {
-    if (data) {
-      setAddons(data);
-    }
-  }, [data]);
-
-  return (
-    <div className="page-fascility">
-      <div className="fascility-list">
-        <div className="adding-fascility">
-          <input
-            type="text"
-            value={addonName}
-            onChange={(e) => setAddonName(e.target.value)}
-          />
-          <button onClick={handleSubmit}>Add</button>
-        </div>
-        <div className="facilities-grid">
-          {addons?.map((addon) => (
-            <label key={addon.id} className="facility-item">
-              <input
-                type="checkbox"
-                onChange={(e) => setAddon(e.target.value)}
-              />
-              {addon.name}
-            </label>
-          ))}
-        </div>
-        {/* <button onClick={handleSubmit}>Add addon</button> */}
-        {error && <div>error </div>}
-      </div>
-    </div>
-  );
-};
+const AddAddon = () => (
+  <AdminCatalogManager
+    title="Booking add-ons"
+    description="Manage optional services that owners can attach to their bookable units."
+    itemLabel="Add-on"
+    endpoint="/api/addons"
+    kind="addon"
+  />
+);
 
 export default AddAddon;

@@ -1,12 +1,9 @@
 import { useState } from "react";
-import { useAuth } from "../context/AuthContext";
 
 const usePostProperty = () => {
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  const { user } = useAuth();
 
   const postProperty = async (link, propertyForCreation) => {
     setIsLoading(true);

@@ -1,24 +1,17 @@
-.guests-dropdown {
-  padding: 5px 10px;
-}
-
-.guest-input:hover {
-  cursor: pointer;
-}
-
-.guest-menu {
-  display: flex;
-  justify-content: space-evenly;
-  align-items: center;
-  gap: 5px;
-}
-
-.circle-button {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-}
-
-.hide {
-  display: none;
-}
+.guests-dropdown { position: relative; width: 100%; }
+.guest-input { display: grid; grid-template-columns: 1fr auto; width: 100%; padding: 2px 0; border: 0; background: transparent; color: #172136; text-align: left; cursor: pointer; }
+.guest-input > span { font-size: 0.91rem; font-weight: 750; }
+.guest-input small { grid-column: 1; color: #8792a5; font-size: 0.67rem; }
+.guest-input b { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: #778397; font-size: 1.05rem; }
+.guest-panel { position: absolute; z-index: 50; top: calc(100% + 14px); right: -8px; width: min(300px, calc(100vw - 40px)); padding: 12px; border: 1px solid #dfe5ee; border-radius: 14px; background: #fff; box-shadow: 0 18px 48px rgba(24, 34, 54, 0.18); }
+.guest-panel::before { position: absolute; top: -6px; right: 23px; width: 11px; height: 11px; border-top: 1px solid #dfe5ee; border-left: 1px solid #dfe5ee; background: #fff; content: ""; transform: rotate(45deg); }
+.guest-menu { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 10px 4px; }
+.guest-menu > div:first-child { display: grid; gap: 3px; }
+.guest-menu strong { color: #172136; font-size: 0.86rem; }
+.guest-menu small { color: #7c879a; font-size: 0.7rem; }
+.guest-stepper { display: grid; grid-template-columns: 30px 30px 30px; align-items: center; text-align: center; }
+.guest-stepper button { display: grid; width: 30px; height: 30px; place-items: center; padding: 0; border: 1px solid #b9c7df; border-radius: 50%; background: #fff; color: #155eef; font-size: 1.05rem; cursor: pointer; }
+.guest-stepper button:hover:not(:disabled) { background: #eef4ff; border-color: #155eef; }
+.guest-stepper button:disabled { opacity: 0.35; cursor: not-allowed; }
+.guest-stepper span { color: #172136; font-size: 0.85rem; font-weight: 800; }
+.guest-done { width: 100%; margin-top: 7px; padding: 9px; border: 0; border-radius: 9px; background: #155eef; color: #fff; font: inherit; font-size: 0.78rem; font-weight: 800; cursor: pointer; }
