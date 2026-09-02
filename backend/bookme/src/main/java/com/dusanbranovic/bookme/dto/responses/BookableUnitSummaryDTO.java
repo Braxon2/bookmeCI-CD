@@ -1,9 +1,10 @@
 package com.dusanbranovic.bookme.dto.responses;
 
 import java.util.List;
+import java.util.UUID;
 
 public record BookableUnitSummaryDTO(
-        Long unitId,
+        UUID unitId,
         PropertyDTO propertyDTO,
 //        List<PeriodPriceDTO> periodPriceList,
 //        List<AddonResponseDTO> addonList,

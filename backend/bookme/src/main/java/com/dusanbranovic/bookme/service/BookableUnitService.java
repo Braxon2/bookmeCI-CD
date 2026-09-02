@@ -285,7 +285,7 @@ public class BookableUnitService {
         log.info("Unit fetched successfully");
 
         return new BookableUnitSummaryDTO(
-                unit.getId(),
+                unit.getPublicId(),
                 propertyDTO,
                 unitFacilityDTO,
                 unitImageDTO,
