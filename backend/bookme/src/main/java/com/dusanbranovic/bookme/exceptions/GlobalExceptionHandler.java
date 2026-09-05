@@ -174,4 +174,19 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
+    @ExceptionHandler(ReviewNotAllowedException.class)
+    public ResponseEntity<ErrorResponse> handleReviewNotAllowedException(
+            ReviewNotAllowedException ex,
+            HttpServletRequest request
+    ){
+        ErrorResponse error = new ErrorResponse(
+                ex.getErrorCode(),
+                ex.getMessage(),
+                ex.getStatus().value(),
+                Instant.now(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
 }

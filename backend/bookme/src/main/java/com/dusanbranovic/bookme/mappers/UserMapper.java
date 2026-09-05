@@ -1,5 +1,6 @@
 package com.dusanbranovic.bookme.mappers;
 
+import com.dusanbranovic.bookme.dto.requests.ReviewAuthorDTO;
 import com.dusanbranovic.bookme.dto.responses.GuestSummaryDTO;
 import com.dusanbranovic.bookme.models.User;
 import org.springframework.stereotype.Component;
@@ -15,6 +16,15 @@ public class UserMapper {
                 user.getFirstName(),
                 user.getLastName(),
                 user.getPhoneNumber());
+
+    }
+
+    public ReviewAuthorDTO toReviewAuthorDTO(User user){
+
+        return new ReviewAuthorDTO(
+                user.getFirstName(),
+                user.getLastName()
+        );
 
     }
 

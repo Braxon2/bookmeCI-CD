@@ -77,7 +77,7 @@ public class PropertyController {
         return propertyService.addUnit(pid, dto);
     }
 
-    @PostMapping("/{pid}/reviews")
+   /* @PostMapping("/{pid}/reviews")
     public ReviewResponseDTO addReview(
             @RequestBody ReviewRequestDTO dto,
             @PathVariable Long pid
@@ -90,7 +90,7 @@ public class PropertyController {
             @PathVariable Long pid
     ){
         return propertyService.getReviews(pid);
-    }
+    }*/
 
     @PostMapping("/{propertyPublicId}/images")
     @ResponseStatus(HttpStatus.CREATED)

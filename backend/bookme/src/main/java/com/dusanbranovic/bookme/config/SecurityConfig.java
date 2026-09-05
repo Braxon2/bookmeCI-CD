@@ -85,6 +85,10 @@ public class SecurityConfig {
 
                         .requestMatchers(HttpMethod.PATCH, "/api/bookings/*").hasAnyAuthority("USER")
 
+                        .requestMatchers(HttpMethod.POST, "/api/reviews/bookings/*/reviews").hasAnyAuthority("USER")
+                        .requestMatchers(HttpMethod.GET, "/api/reviews/units/*/reviews").hasAnyAuthority("ADMIN","OWNER","USER")
+                        .requestMatchers(HttpMethod.GET, "/api/reviews/properties/*/reviews").hasAnyAuthority("ADMIN","OWNER","USER")
+
                 )
 
 

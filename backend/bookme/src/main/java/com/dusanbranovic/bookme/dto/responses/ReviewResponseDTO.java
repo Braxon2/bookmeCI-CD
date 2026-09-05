@@ -1,13 +1,16 @@
 package com.dusanbranovic.bookme.dto.responses;
 
+import com.dusanbranovic.bookme.dto.requests.ReviewAuthorDTO;
+
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public record ReviewResponseDTO(
-        Long id,
+        UUID publicId,
         int rating,
         String text,
-        GuestSummaryDTO reviewer,
-        PropertyDTO property,
+        ReviewAuthorDTO reviewer,
+        UUID bookableUnitPublicId,
+        String bookableUnitName,
         LocalDateTime createdAt
-) {
-}
+) {}

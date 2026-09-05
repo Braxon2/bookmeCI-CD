@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -32,4 +33,15 @@ SELECT b FROM Booking  b
 WHERE b.guest.id = :userId
 """)
     List<Booking> findAllByGuestIdWithUnit(@Param("userId") Long userId);
+
+
+        Optional<Booking> findByPublicId(UUID publicId);
+
+        boolean existsByPublicId(UUID publicId);
+
+        Optional<Booking> findByPublicIdAndGuest_Email(
+                UUID publicId,
+                String email
+        );
+
 }

@@ -3,6 +3,7 @@ package com.dusanbranovic.bookme.models;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 public class Review {
@@ -11,24 +12,34 @@ public class Review {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "reviewer_id")
-    private User reviewer;
+    @Column(
+            name = "public_id",
+            nullable = false,
+            unique = true,
+            updatable = false
+    )
+    private UUID publicId = UUID.randomUUID();
 
-    @ManyToOne
-    @JoinColumn(name = "property_id")
-    private Property property;
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(
+            name = "booking_id",
+            nullable = false,
+            unique = true
+    )
+    private Booking booking;
 
     private int rating;
+
+    @Column(columnDefinition = "TEXT")
     private String text;
+
     private LocalDateTime createdAt;
 
     public Review() {
     }
 
-    public Review(User reviewer, Property property, int rating, String text, LocalDateTime createdAt) {
-        this.reviewer = reviewer;
-        this.property = property;
+    public Review(Booking booking, int rating, String text, LocalDateTime createdAt) {
+        this.booking = booking;
         this.rating = rating;
         this.text = text;
         this.createdAt = createdAt;
@@ -40,22 +51,6 @@ public class Review {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public User getReviewer() {
-        return reviewer;
-    }
-
-    public void setReviewer(User reviewer) {
-        this.reviewer = reviewer;
-    }
-
-    public Property getProperty() {
-        return property;
-    }
-
-    public void setProperty(Property property) {
-        this.property = property;
     }
 
     public int getRating() {
@@ -80,5 +75,21 @@ public class Review {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public UUID getPublicId() {
+        return publicId;
+    }
+
+    public void setPublicId(UUID publicId) {
+        this.publicId = publicId;
+    }
+
+    public Booking getBooking() {
+        return booking;
+    }
+
+    public void setBooking(Booking booking) {
+        this.booking = booking;
     }
 }

@@ -38,9 +38,6 @@ public class Property {
     @OneToMany(mappedBy = "property")
     private List<ContactPerson> contacts;
 
-    @OneToMany(mappedBy = "property", cascade = CascadeType.ALL)
-    private List<Review> reviews = new ArrayList<>();
-
     @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PropertyImage> images = new ArrayList<>();
 
@@ -218,14 +215,6 @@ public class Property {
         this.images = images;
     }
 
-    public List<Review> getReviews() {
-        return reviews;
-    }
-
-    public void setReviews(List<Review> reviews) {
-        this.reviews = reviews;
-    }
-
     @Override
     public String toString() {
         return "Property{" +
@@ -242,10 +231,6 @@ public class Property {
                 '}';
     }
 
-    public void addReview(Review review) {
-        this.reviews.add(review);
-        review.setProperty(this);
-    }
 
     public void addUnit(BookableUnit unit) {
         this.units.add(unit);

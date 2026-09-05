@@ -61,7 +61,7 @@ public class UserService {
 
         return bookingRepository.findAllByGuestIdWithUnit(userID).stream().map(booking ->
                         new BookingSummaryDTO(
-                                booking.getId(),
+                                booking.getPublicId(),
                                 bookableUnitMapper.toDTO(booking.getBookableUnit()),
                                 booking.getTotalPrice(),
                                 booking.getCreatedAt(),

@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 public class Booking {
@@ -13,6 +14,14 @@ public class Booking {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(
+            name = "public_id",
+            nullable = false,
+            unique = true,
+            updatable = false
+    )
+    private UUID publicId = UUID.randomUUID();
 
     @ManyToOne
     @JoinColumn(name = "unit_id")
@@ -128,5 +137,13 @@ public class Booking {
 
     public void setAddonItems(List<BookingAddonItem> addonItems) {
         this.addonItems = addonItems;
+    }
+
+    public UUID getPublicId() {
+        return publicId;
+    }
+
+    public void setPublicId(UUID publicId) {
+        this.publicId = publicId;
     }
 }

@@ -36,7 +36,6 @@ services:
 
       ratingLimit.tokenInBucket: ${RATINGLIMIT_TOKENINBUCKET}
       ratingLimit.duration: ${RATINGLIMIT_DURATION}
-      
     networks:
       - bookme-network
 

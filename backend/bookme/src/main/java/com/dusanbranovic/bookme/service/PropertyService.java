@@ -153,23 +153,7 @@ public class PropertyService {
     }
 
 
-//    public List<BookableUnitsResponseDTO> getAllUnits(UUID pid) {
-//        Property property = propertyRepository.findByPublicId(pid).orElseThrow(() ->{
-//            log.error("Property not found");
-//            return new EntityNotFoundException("Property with id " + pid + " not found");
-//        });
-//
-//        if(property.getUnits().isEmpty()) log.warn("Property have no units");
-//        else log.info("Units successfully fetched");
-//
-//        return property.getUnits().
-//                stream().
-//                map(bookableUnitMapper::toDTO)
-//                .collect(Collectors.toList());
-//
-//    }
 
-    // Service
     public Page<BookableUnitsResponseDTO> getAllUnits(UUID pid, Pageable pageable) {
         if (!propertyRepository.existsByPublicId(pid)) {
             log.error("Property not found");
@@ -205,12 +189,14 @@ public class PropertyService {
 
     }
 
-    public ReviewResponseDTO addReview(ReviewRequestDTO dto, Long pid) {
+   /* public ReviewResponseDTO addReview(ReviewRequestDTO dto, Long pid) {
 
         Property property = propertyRepository.findById(pid).orElseThrow(() ->{
             log.error("Property not found");
             return new EntityNotFoundException("Property with id " + pid + " not found");
         });
+
+        //provera da li je imao rezervaciju koju je iskoristio
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         User guest = (User) auth.getPrincipal();
@@ -259,7 +245,7 @@ public class PropertyService {
                 review.getCreatedAt()
                         )
                 ).collect(Collectors.toList());
-    }
+    }*/
 
 
     public List<PropertyDTO> getPropertiesFromOwner(Long userID) {
@@ -276,43 +262,4 @@ public class PropertyService {
     }
 
 
-/*
-    public List<String> getPropertyImages(Long pid) {
-        Property property = propertyRepository.findById(pid).orElseThrow(() ->{
-            log.error("Property not found");
-            return new EntityNotFoundException("Property with id " + pid + " not found");
-        });
-
-        log.info("Property images successfully fetched");
-
-        return property.getImages().
-                stream()
-                .map(PropertyImage::getUrl)
-                .collect(Collectors.toList());
-    }
-
-    public String getThumbnail(Long pid) {
-        Property property = propertyRepository.findById(pid).orElseThrow(() ->{
-            log.error("Property not found");
-            return new EntityNotFoundException("Property with id " + pid + " not found");
-        });
-
-        String thumbnailUrl =  property.getImages().
-                stream()
-                .filter(PropertyImage::getPrimary)
-                .findFirst()
-                .map(PropertyImage::getUrl)
-                .orElse(null);
-
-
-        if (thumbnailUrl != null) {
-            log.info("Property thumbnail image successfully fetched" + thumbnailUrl);
-        } else {
-            log.warn("No primary image found for property id: {}", pid);
-        }
-
-        return thumbnailUrl;
-    }
-
- */
 }

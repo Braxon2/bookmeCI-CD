@@ -28,9 +28,6 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "owner")
     private List<Property> properties = new ArrayList<>();;
 
-    @OneToMany(mappedBy = "reviewer")
-    private List<Review> reviews;
-
     @OneToMany(mappedBy = "guest")
     private List<Booking> bookings;
 
@@ -165,14 +162,6 @@ public class User implements UserDetails {
 
     public void setProperties(List<Property> properties) {
         this.properties = properties;
-    }
-
-    public List<Review> getReviews() {
-        return reviews;
-    }
-
-    public void setReviews(List<Review> reviews) {
-        this.reviews = reviews;
     }
 
     public List<Booking> getBookings() {

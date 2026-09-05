@@ -292,7 +292,7 @@ public class BookingService {
         log.info("Booking {} successfully cancelled by user {}", bookingID, currentUser.getId());
 
         return new BookingSummaryDTO(
-                savedBooking.getId(),
+                savedBooking.getPublicId(),
                 bookableUnitMapper.toDTO(bookingToCancel.getBookableUnit()),
                 bookingToCancel.getTotalPrice(),
                 bookingToCancel.getCreatedAt(),

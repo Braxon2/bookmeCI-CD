@@ -4,9 +4,10 @@ import com.dusanbranovic.bookme.models.BookingStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public record BookingSummaryDTO(
-        Long id,
+        UUID id,
         BookableUnitsResponseDTO bookableUnit,
         Double totalPrice,
         LocalDate createdAt,
