@@ -59,6 +59,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/units/*").hasAnyAuthority("ADMIN","OWNER","USER")
                         .requestMatchers(HttpMethod.GET, "/api/units/search").hasAnyAuthority("ADMIN","OWNER","USER")
                         .requestMatchers(HttpMethod.GET, "/api/units/*/addons").hasAnyAuthority("ADMIN","OWNER","USER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/units/*/addons/*").hasAnyAuthority("ADMIN","OWNER")
                         .requestMatchers(HttpMethod.PATCH, "/api/units/*/addons/*/billing-type").hasAnyAuthority("OWNER")
                         .requestMatchers(HttpMethod.GET, "/api/units/**").hasAnyAuthority("ADMIN","OWNER","USER")
                         .requestMatchers(HttpMethod.POST, "/api/units/*/addons/*/add-price").hasAnyAuthority("ADMIN","OWNER")

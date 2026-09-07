@@ -17,7 +17,7 @@ public class BookingMapper {
 
     public BookingResponseDTO toDTO(Booking booking){
         return new BookingResponseDTO(
-                booking.getId(),
+                booking.getPublicId(),
                 bookableUnitMapper.toDTO(booking.getBookableUnit()),
                 userMapper.toDTO(booking.getGuest()),
                 booking.getTotalPrice(),

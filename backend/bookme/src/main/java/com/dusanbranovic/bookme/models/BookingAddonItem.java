@@ -17,6 +17,11 @@ public class BookingAddonItem {
     @JoinColumn(name = "addon_id", nullable = false)
     private Addon addon;
 
+    @Column(
+            name = "addon_name_snapshot",
+            nullable = false
+    )
+    private String addonNameSnapshot;
 
     private double pricePaid;
     private boolean wasPerNight;
@@ -24,11 +29,12 @@ public class BookingAddonItem {
     public BookingAddonItem() {
     }
 
-    public BookingAddonItem(Booking booking, Addon addon, double pricePaid, boolean wasPerNight) {
+    public BookingAddonItem(Booking booking, String addonNameSnapshot, double pricePaid, boolean wasPerNight, Addon addon) {
         this.booking = booking;
-        this.addon = addon;
+        this.addonNameSnapshot = addonNameSnapshot;
         this.pricePaid = pricePaid;
         this.wasPerNight = wasPerNight;
+        this.addon = addon;
     }
 
     public Long getId() {
@@ -69,5 +75,13 @@ public class BookingAddonItem {
 
     public void setWasPerNight(boolean wasPerNight) {
         this.wasPerNight = wasPerNight;
+    }
+
+    public String getAddonNameSnapshot() {
+        return addonNameSnapshot;
+    }
+
+    public void setAddonNameSnapshot(String addonNameSnapshot) {
+        this.addonNameSnapshot = addonNameSnapshot;
     }
 }

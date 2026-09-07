@@ -93,6 +93,15 @@ public class BookableUnitController {
         return addonService.addAddonToUnit(unitId,dto);
     }
 
+    @DeleteMapping("/{unitId}/addons/{addonId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeAddonFromUnit(
+            @PathVariable UUID unitId,
+            @PathVariable Long addonId
+    ) {
+        addonService.removeAddonFromUnit(unitId, addonId);
+    }
+
     @PatchMapping("/{unitId}/addons/{addonId}/billing-type")
     public boolean changeBillingType(
             @PathVariable UUID unitId,

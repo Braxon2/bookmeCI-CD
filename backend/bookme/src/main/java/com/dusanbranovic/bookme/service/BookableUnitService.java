@@ -4,13 +4,11 @@ import com.dusanbranovic.bookme.dto.requests.AddFacilitiesRequestDTO;
 import com.dusanbranovic.bookme.dto.requests.PeriodPriceRequestDTO;
 import com.dusanbranovic.bookme.dto.responses.*;
 import com.dusanbranovic.bookme.exceptions.EntityNotFoundException;
+import com.dusanbranovic.bookme.exceptions.InvalidDateRangeException;
 import com.dusanbranovic.bookme.mappers.BookableUnitMapper;
 import com.dusanbranovic.bookme.mappers.PeriodPriceMapper;
 import com.dusanbranovic.bookme.models.*;
-import com.dusanbranovic.bookme.repository.BookableUnitRepository;
-import com.dusanbranovic.bookme.repository.PeriodPriceRepository;
-import com.dusanbranovic.bookme.repository.UnitFascilityRepository;
-import com.dusanbranovic.bookme.repository.UnitFascillityMappingRepository;
+import com.dusanbranovic.bookme.repository.*;
 import com.dusanbranovic.bookme.specifications.BookableUnitSpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +36,7 @@ public class BookableUnitService {
     private final PeriodPriceRepository periodPriceRepository;
     private final UnitFascilityRepository unitFascilityRepository;
     private final UnitFascillityMappingRepository unitFascillityMappingRepository;
+    private final AddonMappingRepository addonMappingRepository;
     private final S3Service s3Service;
 
     private final BookableUnitMapper bookableUnitMapper;
@@ -50,6 +49,7 @@ public class BookableUnitService {
             PeriodPriceRepository periodPriceRepository,
             UnitFascilityRepository unitFascilityRepository,
             UnitFascillityMappingRepository unitFascillityMappingRepository,
+            AddonMappingRepository addonMappingRepository,
             S3Service s3Service,
             BookableUnitMapper bookableUnitMapper,
             PeriodPriceMapper periodPriceMapper
@@ -58,6 +58,7 @@ public class BookableUnitService {
         this.periodPriceRepository = periodPriceRepository;
         this.unitFascilityRepository = unitFascilityRepository;
         this.unitFascillityMappingRepository = unitFascillityMappingRepository;
+        this.addonMappingRepository = addonMappingRepository;
         this.s3Service = s3Service;
         this.bookableUnitMapper = bookableUnitMapper;
         this.periodPriceMapper = periodPriceMapper;
@@ -301,23 +302,47 @@ public class BookableUnitService {
     }
 
 
-    public List<BookableUnitAddonsResponseDTO> getUnitAddons(UUID unitId, LocalDate startDate, LocalDate endDate) {
+    public List<BookableUnitAddonsResponseDTO> getUnitAddons(
+            UUID unitId,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
 
-        BookableUnit unit = bookableUnitRepository.findByPublicId(unitId)
-                .orElseThrow(() -> new EntityNotFoundException("Unit with ID " + unitId + " not found"));
+        if (!startDate.isBefore(endDate)) {
+            throw new InvalidDateRangeException(
+                    "Start date must be before end date"
+            );
+        }
 
-        List<AddonMapping> addonMappings = unit.getAddonMappings();
+        if (!bookableUnitRepository.existsByPublicId(unitId)) {
+            throw new EntityNotFoundException(
+                    "Unit with ID " + unitId + " not found"
+            );
+        }
+
+        List<AddonMapping> addonMappings =
+                addonMappingRepository
+                        .findAvailableAddonsForPeriod(
+                                unitId,
+                                startDate,
+                                endDate
+                        );
 
         return addonMappings.stream()
-                .map(mapping -> {
-                    return new BookableUnitAddonsResponseDTO(
-                            mapping.getId(),
-                            mapping.getAddon().getId(),
-                            mapping.getAddon().getName(),
-                            calculateAddonPrice(startDate,endDate,mapping),
-                            mapping.isPerNight()
-                    );
-                }).collect(Collectors.toList());
+                .map(mapping ->
+                        new BookableUnitAddonsResponseDTO(
+                                mapping.getId(),
+                                mapping.getAddon().getId(),
+                                mapping.getAddon().getName(),
+                                calculateAddonPrice(
+                                        startDate,
+                                        endDate,
+                                        mapping
+                                ),
+                                mapping.isPerNight()
+                        )
+                )
+                .toList();
     }
 
     private double calculateAddonPrice(
@@ -412,10 +437,19 @@ public class BookableUnitService {
                         new PeriodPriceDTO(price.getId(),price.getPricePerNight(),price.getStartDate(),price.getEndDate(),price.getSeason()))
                 .toList();
 
-        List<AddonResponseDTO> addonDTO = unit.getAddonMappings()
-                .stream().map(addon ->
-                        new AddonResponseDTO(addon.getAddon().getId(), addon.getAddon().getName()))
-                .toList();
+        List<AddonResponseDTO> addonDTO =
+                addonMappingRepository
+                        .findByBookableUnit_PublicIdAndActiveUntilIsNull(
+                                unitId
+                        )
+                        .stream()
+                        .map(mapping ->
+                                new AddonResponseDTO(
+                                        mapping.getAddon().getId(),
+                                        mapping.getAddon().getName()
+                                )
+                        )
+                        .toList();
 
         List<UnitFascilityResponseDTO> unitFacilityDTO = unit.getUnitFascilityMappings()
                 .stream().map(ufac ->

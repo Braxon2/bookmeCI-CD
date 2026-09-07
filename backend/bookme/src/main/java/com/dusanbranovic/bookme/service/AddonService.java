@@ -17,6 +17,7 @@ import com.dusanbranovic.bookme.repository.AddonMappingRepository;
 import com.dusanbranovic.bookme.repository.AddonRepository;
 import com.dusanbranovic.bookme.repository.BookableUnitRepository;
 import com.dusanbranovic.bookme.repository.PeriodPriceAddonRepository;
+import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -49,29 +50,70 @@ public class AddonService {
         this.addonMappingRepository = addonMappingRepository;
     }
 
-    public AddonToAddResponseDTO addAddonToUnit(UUID unitId, AddonToAddRequestDTO dto) {
+    @Transactional
+    public AddonToAddResponseDTO addAddonToUnit(
+            UUID unitId,
+            AddonToAddRequestDTO dto
+    ) {
 
-        BookableUnit unit = bookableUnitRepository.findByPublicId(unitId).orElseThrow(() -> {
-            log.error("Unit not found");
-            return new EntityNotFoundException("Unit with id " + unitId + " not found");
-        });
+        BookableUnit unit = bookableUnitRepository
+                .findByPublicId(unitId)
+                .orElseThrow(() -> {
+                    log.error("Unit not found");
+                    return new EntityNotFoundException(
+                            "Unit with id " + unitId + " not found"
+                    );
+                });
 
-        Addon addon = addonRepository.findById(dto.id()).orElseThrow(() -> {
-            log.error("Addon not found");
-            return new EntityNotFoundException("Addon with id " + dto.id() + " not found");
-        });
+        Addon addon = addonRepository
+                .findById(dto.id())
+                .orElseThrow(() -> {
+                    log.error("Addon not found");
+                    return new EntityNotFoundException(
+                            "Addon with id " + dto.id() + " not found"
+                    );
+                });
 
-        Optional<AddonMapping> existingMapping = addonMappingRepository.findByAddonAndUnitID(unitId, dto.id());
-        if (existingMapping.isPresent()) {
-            log.error("This addon is already mapped to this unit.");
-            throw new EntityAlreadyExistsExcpetion("This addon is already mapped to this unit.");
+        Optional<AddonMapping> activeMapping =
+                addonMappingRepository.findActiveByAddonAndUnit(
+                        unitId,
+                        dto.id()
+                );
+
+        if (activeMapping.isPresent()) {
+            log.warn(
+                    "Addon {} is already active for unit {}",
+                    dto.id(),
+                    unitId
+            );
+
+            throw new EntityAlreadyExistsExcpetion(
+                    "This addon is already active for this unit."
+            );
         }
 
-        AddonMapping addonMapping = new AddonMapping(false,unit,addon);
-        AddonMapping savedAddonMapping = addonMappingRepository.save(addonMapping);
-        log.info("Addon successfully added to unit");
+        AddonMapping addonMapping =
+                new AddonMapping(
+                        false,
+                        unit,
+                        addon,
+                        LocalDate.now()
+                );
 
-        return new AddonToAddResponseDTO(savedAddonMapping.getId(),savedAddonMapping.getAddon().getName(), savedAddonMapping.isPerNight());
+        AddonMapping savedAddonMapping =
+                addonMappingRepository.save(addonMapping);
+
+        log.info(
+                "Addon {} added to unit {}",
+                addon.getId(),
+                unitId
+        );
+
+        return new AddonToAddResponseDTO(
+                savedAddonMapping.getId(),
+                savedAddonMapping.getAddon().getName(),
+                savedAddonMapping.isPerNight()
+        );
     }
 
     public List<AddonResponseDTO> getAllAddons() {
@@ -103,8 +145,9 @@ public class AddonService {
             return new EntityNotFoundException("Addon with id " + addonId + " not found");
         });
 
-        AddonMapping addonMapping = addonMappingRepository.findByAddonAndUnitID(unitId,addonId).orElseThrow(() ->{
-            log.error("Addon not found in unit");
+        AddonMapping addonMapping = addonMappingRepository
+                .findActiveByAddonAndUnit(unitId, addonId).orElseThrow(() ->{
+            log.error("Active addon with id" + + addonId + " not found in unit" + unitId);
             return new EntityNotFoundException("Addon with id " + addonId + " not found in unit with id " + unitId);
         });
 
@@ -169,10 +212,11 @@ public class AddonService {
             return new EntityNotFoundException("Addon with id " + addonId + " not found");
         });
 
-        AddonMapping addonMapping = addonMappingRepository.findByAddonAndUnitID(unitId,addonId).orElseThrow(() ->{
-            log.error("Addon not found in unit");
-            return new EntityNotFoundException("Addon with id " + addonId + " not found in unit with id " + unitId);
-        });
+        AddonMapping addonMapping = addonMappingRepository
+                .findActiveByAddonAndUnit(unitId, addonId).orElseThrow(() ->{
+                    log.error("Active addon with id" + + addonId + " not found in unit" + unitId);
+                    return new EntityNotFoundException("Addon with id " + addonId + " not found in unit with id " + unitId);
+                });
         addonMapping.setPerNight(dto.isPerNight());
         addonMappingRepository.save(addonMapping);
 
@@ -191,10 +235,11 @@ public class AddonService {
             return new EntityNotFoundException("Addon with id " + addonId + " not found");
         });
 
-        AddonMapping addonMapping = addonMappingRepository.findByAddonAndUnitID(unitId,addonId).orElseThrow(() ->{
-            log.error("Addon not found in unit");
-            return new EntityNotFoundException("Addon with id " + addonId + " not found in unit with id " + unitId);
-        });
+        AddonMapping addonMapping = addonMappingRepository
+                .findActiveByAddonAndUnit(unitId, addonId).orElseThrow(() ->{
+                    log.error("Active addon with id" + + addonId + " not found in unit" + unitId);
+                    return new EntityNotFoundException("Addon with id " + addonId + " not found in unit with id " + unitId);
+                });
 
         return addonMapping
                 .getPeriodPriceAddons()
@@ -208,5 +253,37 @@ public class AddonService {
                                 periodPrice.getEndDate())
                 )
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void removeAddonFromUnit(
+            UUID unitId,
+            Long addonId
+    ) {
+
+        AddonMapping mapping =
+                addonMappingRepository
+                        .findActiveByAddonAndUnit(
+                                unitId,
+                                addonId
+                        )
+                        .orElseThrow(() ->
+                                new EntityNotFoundException(
+                                        "Active addon with id "
+                                                + addonId
+                                                + " not found for unit "
+                                                + unitId
+                                )
+                        );
+
+        mapping.setActiveUntil(LocalDate.now());
+
+        addonMappingRepository.save(mapping);
+
+        log.info(
+                "Addon {} removed from unit {}",
+                addonId,
+                unitId
+        );
     }
 }

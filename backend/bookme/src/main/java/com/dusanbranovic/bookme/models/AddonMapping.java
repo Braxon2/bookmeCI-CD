@@ -2,6 +2,7 @@ package com.dusanbranovic.bookme.models;
 
 import jakarta.persistence.*;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,6 +23,11 @@ public class AddonMapping {
     @JoinColumn(name = "addon_id")
     private Addon addon;
 
+    @Column(nullable = false)
+    private LocalDate activeFrom;
+
+    private LocalDate activeUntil;
+
     @OneToMany(mappedBy = "addonMapping", cascade = CascadeType.ALL)
     private List<PeriodPriceAddon> periodPriceAddons = new ArrayList<>();
 
@@ -32,6 +38,13 @@ public class AddonMapping {
         this.perNight = perNight;
         this.bookableUnit = bookableUnit;
         this.addon = addon;
+    }
+
+    public AddonMapping(boolean perNight, BookableUnit bookableUnit, Addon addon, LocalDate activeFrom) {
+        this.perNight = perNight;
+        this.bookableUnit = bookableUnit;
+        this.addon = addon;
+        this.activeFrom = activeFrom;
     }
 
     public Long getId() {
@@ -65,6 +78,22 @@ public class AddonMapping {
 
     public void setAddon(Addon addon) {
         this.addon = addon;
+    }
+
+    public LocalDate getActiveFrom() {
+        return activeFrom;
+    }
+
+    public void setActiveFrom(LocalDate activeFrom) {
+        this.activeFrom = activeFrom;
+    }
+
+    public LocalDate getActiveUntil() {
+        return activeUntil;
+    }
+
+    public void setActiveUntil(LocalDate activeUntil) {
+        this.activeUntil = activeUntil;
     }
 
     public List<PeriodPriceAddon> getPeriodPriceAddons() {

@@ -54,71 +54,151 @@ public class BookingService {
         this.bookableUnitMapper = bookableUnitMapper;
     }
 
-    public BookingResponseDTO bookAUnit(UUID unitId, BookingRequestDTO bookingRequestDTO) {
-        BookableUnit unit = bookableUnitRepository.findByPublicId(unitId).orElseThrow(() -> {
-            log.error("Unit not found");
-            return new EntityNotFoundException("Unit with id " + unitId + " not found");
-        });
+    @Transactional
+    public BookingResponseDTO bookAUnit(
+            UUID unitId,
+            BookingRequestDTO bookingRequestDTO
+    ) {
+
+
+        BookableUnit unit = bookableUnitRepository
+                .findByPublicId(unitId)
+                .orElseThrow(() -> {
+                    log.error("Unit with id {} not found", unitId);
+                    return new EntityNotFoundException(
+                            "Unit with id " + unitId + " not found"
+                    );
+                });
+
+
+        LocalDate start = bookingRequestDTO.start_date();
+        LocalDate end = bookingRequestDTO.end_date();
+
+        if (start == null || end == null || !start.isBefore(end)) {
+            log.error(
+                    "Invalid booking date range: {} - {}",
+                    start,
+                    end
+            );
+
+            throw new InvalidDateRangeException(
+                    "Start date must be before end date"
+            );
+        }
+
+
+        LocalDateTime checkIn = start.atStartOfDay();
+        LocalDateTime checkOut = end.atStartOfDay();
+
+
+        long overlappingCount =
+                bookingRepository.countOverlappingBookings(
+                        unitId,
+                        checkIn,
+                        checkOut
+                );
+
+        if (overlappingCount >= unit.getTotalUnits()) {
+            log.error(
+                    "No available units for unit {} between {} and {}",
+                    unitId,
+                    start,
+                    end
+            );
+
+            throw new OverlappingBookingExcpetion(
+                    "No available units for selected dates"
+            );
+        }
 
 
         List<AddonMapping> addonMappings = new ArrayList<>();
 
-        if(bookingRequestDTO.addons() != null) {
-            List<Long> addonIds = bookingRequestDTO.addons().stream().map(AddonsRequestDTO::id).toList();
+        if (bookingRequestDTO.addons() != null) {
 
-            for (int i = 0; i < addonIds.size(); i++) {
-                int row = i;
+            List<Long> addonIds =
+                    bookingRequestDTO
+                            .addons()
+                            .stream()
+                            .map(AddonsRequestDTO::id)
+                            .distinct()
+                            .toList();
 
-                Long addonId = addonIds.get(i);
-                Addon addon = addonRepository.findById(addonId).orElseThrow(() -> {
-                    log.error("Addon not found");
-                    throw new EntityNotFoundException("Addon with id " + addonIds.get(row) + " not found");
-                });
+            for (Long addonId : addonIds) {
 
-                AddonMapping addonMapping = addonMappingRepository.findByAddonAndUnitID(unitId,addonId).orElseThrow(() ->{
-                    log.error("Addon not found in unit");
-                    return new EntityNotFoundException("Addon with id " + addonId + " not found in unit with id " + unitId);
-                });
+                AddonMapping addonMapping =
+                        addonMappingRepository
+                                .findAvailableAddonForPeriod(
+                                        unitId,
+                                        addonId,
+                                        start,
+                                        end
+                                )
+                                .orElseThrow(() -> {
+
+                                    log.error(
+                                            "Addon {} is not available for unit {} between {} and {}",
+                                            addonId,
+                                            unitId,
+                                            start,
+                                            end
+                                    );
+
+                                    return new EntityNotFoundException(
+                                            "Addon with id "
+                                                    + addonId
+                                                    + " is not available for this unit "
+                                                    + "during the selected dates"
+                                    );
+                                });
 
                 addonMappings.add(addonMapping);
             }
         }
 
 
-        LocalDate start = bookingRequestDTO.start_date();
-        LocalDate end = bookingRequestDTO.end_date();
-
-        if (!start.isBefore(end)) {
-            log.error("Start date must be before end date");
-            throw new InvalidDateRangeException("Start date must be before end date");
-        }
-
-        LocalDateTime checkIn = start.atStartOfDay();
-        LocalDateTime checkOut = end.atStartOfDay();
-
-        long overlappingCount =
-                bookingRepository.countOverlappingBookings(unitId, checkIn, checkOut);
-
-        if (overlappingCount >= unit.getTotalUnits()) {
-            log.error("No available units for selected dates");
-            throw new OverlappingBookingExcpetion("No available units for selected dates");
-        }
-
         List<PeriodPrice> prices = unit.getPeriodPriceList();
-        double totalAddonPrice = 0;
-        double totalPrice = calculatePrice(start, end, prices);
 
-        for (int i = 0; i < addonMappings.size(); i++) {
-            totalAddonPrice += calculateAddonPrice(start, end, addonMappings.get(i));
+        double totalPrice =
+                calculatePrice(
+                        start,
+                        end,
+                        prices
+                );
+
+
+        double totalAddonPrice = 0.0;
+
+        for (AddonMapping mapping : addonMappings) {
+
+            double addonPrice =
+                    calculateAddonPrice(
+                            start,
+                            end,
+                            mapping
+                    );
+
+            totalAddonPrice += addonPrice;
         }
 
         totalPrice += totalAddonPrice;
 
-        log.info("Total price calculated successfully");
+        log.info(
+                "Total booking price calculated successfully: {}",
+                totalPrice
+        );
 
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+
+        Authentication auth =
+                SecurityContextHolder
+                        .getContext()
+                        .getAuthentication();
+
         User guest = (User) auth.getPrincipal();
+
+
 
         Booking booking = new Booking(
                 unit,
@@ -131,42 +211,57 @@ public class BookingService {
         );
 
         for (AddonMapping mapping : addonMappings) {
-            double historicalPriceForThisAddon = calculateAddonPrice(start, end, mapping);
 
-            BookingAddonItem item = new BookingAddonItem(
-                    booking,
-                    mapping.getAddon(),
-                    historicalPriceForThisAddon,
-                    mapping.isPerNight()
-            );
+            double historicalPriceForThisAddon =
+                    calculateAddonPrice(
+                            start,
+                            end,
+                            mapping
+                    );
+
+            BookingAddonItem item =
+                    new BookingAddonItem(
+                            booking,
+                            mapping.getAddon().getName(),
+                            historicalPriceForThisAddon,
+                            mapping.isPerNight(),
+                            mapping.getAddon()
+                    );
 
             booking.addAddonItem(item);
         }
 
-        log.info("Booking created successfully");
+        Booking savedBooking =
+                bookingRepository.save(booking);
 
-        Booking savedBooking = bookingRepository.save(booking);
-
-
-        BookableUnitsResponseDTO unitDTO = bookableUnitMapper.toDTO(unit);
-
-        GuestSummaryDTO guestDTO = new GuestSummaryDTO(
-                guest.getId(),
-                guest.getEmail(),
-                guest.getFirstName(),
-                guest.getLastName(),
-                guest.getPhoneNumber()
+        log.info(
+                "Booking {} created successfully",
+                savedBooking.getPublicId()
         );
 
+
+        BookableUnitsResponseDTO unitDTO =
+                bookableUnitMapper.toDTO(unit);
+
+        GuestSummaryDTO guestDTO =
+                new GuestSummaryDTO(
+                        guest.getId(),
+                        guest.getEmail(),
+                        guest.getFirstName(),
+                        guest.getLastName(),
+                        guest.getPhoneNumber()
+                );
+
+
         return new BookingResponseDTO(
-                savedBooking.getId(),
+                savedBooking.getPublicId(),
                 unitDTO,
                 guestDTO,
                 totalPrice,
-                LocalDate.now(),
-                checkIn,
-                checkOut,
-                BookingStatus.CONFIRMED
+                savedBooking.getCreatedAt(),
+                savedBooking.getCheckIn(),
+                savedBooking.getCheckOut(),
+                savedBooking.getStatus()
         );
     }
 
