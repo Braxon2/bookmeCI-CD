@@ -1,130 +1,70 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import usePostProperty from "../hooks/usePostProperty";
+import "./styles/AddUnit.css";
 
 const AddUnit = () => {
   const apiURL = import.meta.env.VITE_API_URL || "";
   const { propertyId } = useParams();
-
-  const [maxCapacity, setMaxCapacity] = useState(0);
-  const [squareMeters, setSquareMeters] = useState(0);
-  const [totalUnits, setTotalUnits] = useState(0);
-  const [singleBeds, setSingleBeds] = useState(0);
-  const [doubleBeds, setDoubleBeds] = useState(0);
-  const [maxAdultCapacity, setMaxAdultCapacity] = useState(0);
-  const [maxKidsCapacity, setMaxKidsCapacity] = useState(0);
-  const [name, setName] = useState("");
-
-  const unitForCreation = {
-    maxCapacity,
-    squareMeters,
-    totalUnits,
-    singleBeds,
-    doubleBeds,
-    maxAdultCapacity,
-    maxKidsCapacity,
-    name,
-  };
-
+  const navigate = useNavigate();
   const { data, isLoading, error, postProperty } = usePostProperty();
+  const [form, setForm] = useState({
+    name: "", maxCapacity: 1, squareMeters: 20, totalUnits: 1,
+    singleBeds: 1, doubleBeds: 0, maxAdultCapacity: 1, maxKidsCapacity: 0,
+  });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    await postProperty(
-      `${apiURL}/api/properties/${propertyId}/add-unit`,
-      unitForCreation,
-    );
+  const updateField = (field, value) => setForm((current) => ({ ...current, [field]: value }));
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    await postProperty(`${apiURL}/api/properties/${propertyId}/add-unit`, {
+      ...form,
+      name: form.name.trim(),
+      maxCapacity: Number(form.maxCapacity),
+      squareMeters: Number(form.squareMeters),
+      totalUnits: Number(form.totalUnits),
+      singleBeds: Number(form.singleBeds),
+      doubleBeds: Number(form.doubleBeds),
+      maxAdultCapacity: Number(form.maxAdultCapacity),
+      maxKidsCapacity: Number(form.maxKidsCapacity),
+    });
   };
+
   return (
-    <div className="page">
-      <form className="form-card" onSubmit={handleSubmit}>
-        <h2 className="form-title">Add Unit</h2>
-        <div className="form-field">
-          <label htmlFor="name">Name</label>
-          <input
-            id="name"
-            name="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            type="text"
-          />
-        </div>
-        <div className="form-field">
-          <label htmlFor="maxCapacity">Max capacity</label>
-          <input
-            id="maxCapacity"
-            type="number"
-            name="maxCapacity"
-            value={maxCapacity}
-            onChange={(e) => setMaxCapacity(e.target.value)}
-          />
-        </div>
-        <div className="form-field">
-          <label htmlFor="squareMeters">Square Meters</label>
-          <input
-            type="number"
-            step="0.1"
-            value={squareMeters}
-            onChange={(e) => setSquareMeters(parseFloat(e.target.value))}
-          />
-        </div>
-        <div className="form-field">
-          <label htmlFor="totalUnits">Total Units</label>
-          <input
-            id="totalUnits"
-            type="number"
-            name="totalUnits"
-            value={totalUnits}
-            onChange={(e) => setTotalUnits(e.target.value)}
-          />
-        </div>
-        <div className="form-field">
-          <label htmlFor="singleBeds">Single beds</label>
-          <input
-            id="singleBeds"
-            type="number"
-            name="singleBeds"
-            value={singleBeds}
-            onChange={(e) => setSingleBeds(e.target.value)}
-          />
-        </div>
-        <div className="form-field">
-          <label htmlFor="doubleBeds">Double Beds</label>
-          <input
-            id="doubleBeds"
-            type="number"
-            name="doubleBeds"
-            value={doubleBeds}
-            onChange={(e) => setDoubleBeds(e.target.value)}
-          />
-        </div>
-        <div className="form-field">
-          <label htmlFor="maxAdultCapacity">Max Adult Capcity</label>
-          <input
-            id="maxAdultCapacity"
-            type="number"
-            name="maxAdultCapacity"
-            value={maxAdultCapacity}
-            onChange={(e) => setMaxAdultCapacity(e.target.value)}
-          />
-        </div>
-        <div className="form-field">
-          <label htmlFor="totalUnits">Max Kids Capacity</label>
-          <input
-            id="maxKidsCapacity"
-            type="number"
-            name="maxKidsCapacity"
-            value={maxKidsCapacity}
-            onChange={(e) => setMaxKidsCapacity(e.target.value)}
-          />
-        </div>
-
-        <button className="submit-btn">Add Unit</button>
-
-        {error && <div className="error">{error}</div>}
-        {data && <div className="error">{data.name}</div>}
-      </form>
-    </div>
+    <main className="add-unit-page">
+      <div className="add-unit-shell">
+        <button className="add-unit-back" type="button" onClick={() => navigate(-1)}>← Back to property</button>
+        <header className="add-unit-header">
+          <span>Owner workspace</span><h1>Add a bookable unit</h1>
+          <p>Define the room, apartment, or house guests can reserve. Pricing, amenities, add-ons, and images can be configured afterwards.</p>
+        </header>
+        <form className="add-unit-form" onSubmit={handleSubmit}>
+          <section className="add-unit-section">
+            <div className="add-unit-section-heading"><span>01</span><div><h2>Unit basics</h2><p>Name the unit and describe its size and availability.</p></div></div>
+            <div className="add-unit-grid">
+              <label className="add-unit-field is-wide"><span>Unit name</span><input required value={form.name} onChange={(e) => updateField("name", e.target.value)} placeholder="e.g. Deluxe river-view apartment" /><small>Use a name guests can distinguish from your other units.</small></label>
+              <label className="add-unit-field"><span>Size in square metres</span><input required min="1" step="0.1" type="number" value={form.squareMeters} onChange={(e) => updateField("squareMeters", e.target.value)} /></label>
+              <label className="add-unit-field"><span>Number of identical units</span><input required min="1" type="number" value={form.totalUnits} onChange={(e) => updateField("totalUnits", e.target.value)} /></label>
+            </div>
+          </section>
+          <section className="add-unit-section">
+            <div className="add-unit-section-heading"><span>02</span><div><h2>Guests and beds</h2><p>Set safe occupancy and sleeping arrangements.</p></div></div>
+            <div className="add-unit-grid">
+              <label className="add-unit-field"><span>Maximum guests</span><input required min="1" type="number" value={form.maxCapacity} onChange={(e) => updateField("maxCapacity", e.target.value)} /></label>
+              <label className="add-unit-field"><span>Maximum adults</span><input required min="1" type="number" value={form.maxAdultCapacity} onChange={(e) => updateField("maxAdultCapacity", e.target.value)} /></label>
+              <label className="add-unit-field"><span>Maximum children</span><input required min="0" type="number" value={form.maxKidsCapacity} onChange={(e) => updateField("maxKidsCapacity", e.target.value)} /></label>
+              <label className="add-unit-field"><span>Single beds</span><input required min="0" type="number" value={form.singleBeds} onChange={(e) => updateField("singleBeds", e.target.value)} /></label>
+              <label className="add-unit-field"><span>Double beds</span><input required min="0" type="number" value={form.doubleBeds} onChange={(e) => updateField("doubleBeds", e.target.value)} /></label>
+            </div>
+          </section>
+          <footer className="add-unit-footer">
+            <div className="add-unit-summary"><span>{form.maxCapacity} guests</span><span>{Number(form.singleBeds) + Number(form.doubleBeds)} beds</span><span>{form.squareMeters} m²</span></div>
+            <button className="add-unit-submit" type="submit" disabled={isLoading}>{isLoading ? "Creating unit..." : "Create unit"}</button>
+          </footer>
+          {error && <p className="add-unit-message is-error" role="alert">{error}</p>}
+          {data && <p className="add-unit-message is-success" role="status"><strong>{data.name}</strong> was created. You can now add pricing, amenities, add-ons, and images.</p>}
+        </form>
+      </div>
+    </main>
   );
 };
 

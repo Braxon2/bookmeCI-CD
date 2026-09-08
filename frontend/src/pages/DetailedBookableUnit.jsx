@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import imageFallback from "../assets/images/Image-not-found.png";
 import { useFetch } from "../hooks/useFetch";
+import UnitReviews from "../components/UnitReviews";
 import "./styles/DetailedBookableUnit.css";
 
 const priceFormat = new Intl.NumberFormat("en-GB", {
@@ -271,6 +272,7 @@ const DetailedBookableUnit = () => {
             {bookingError && <p className="unit-booking-error" role="alert">{bookingError}</p>}
           </aside>
         </div>
+        <UnitReviews unitId={unitId} propertyId={property?.publicId} unitName={unitName} />
       </div>
 
       {activeImageIndex !== null && <div className="unit-lightbox" role="dialog" aria-modal="true"

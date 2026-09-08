@@ -20,6 +20,7 @@ import UserProfile from "./pages/UserProfile";
 import AddAddon from "./pages/AddAddon";
 import AddAddonToUnit from "./pages/AddAddonToUnit";
 import AddPeriodPriceAddon from "./pages/AddPeriodpriceAddon";
+import UnitImages from "./pages/UnitImages";
 function App() {
   return (
     <BrowserRouter>
@@ -52,6 +53,7 @@ function App() {
         <Route path="/properties/:propertyId/add-unit" element={<AddUnit />} />
 
         <Route path="/units/:unitId" element={<DetailedBookableUnit />} />
+        <Route path="/units/:unitId/images" element={<UnitImages />} />
 
         <Route
           path="/units/:unitId/add-price"

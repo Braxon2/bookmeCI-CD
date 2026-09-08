@@ -31,10 +31,7 @@ const useImageUpload = () => {
         );
       }
 
-      const rawText = await res.text();
-      const cleanImageUrl = rawText.replace(/^"|"$/g, "");
-
-      return cleanImageUrl;
+      return await res.json();
     } catch (err) {
       console.error("Upload error:", err);
       setUploadError(err.message);

@@ -17,14 +17,16 @@ const Login = () => {
 
   useEffect(() => {
     if (user) {
-      navigate("/");
+      if (user.role === "OWNER") navigate("/list-properties", { replace: true });
+      else if (user.role === "ADMIN") navigate("/fascilities", { replace: true });
+      else navigate("/search", { replace: true });
     }
   }, [user, navigate]);
 
   return (
     <div className="login-container">
       <form className="login-form" onSubmit={handleSubmit}>
-        <h2>Log In 123</h2>
+        <h2>Log in</h2>
 
         <label>Email</label>
         <input
@@ -41,7 +43,9 @@ const Login = () => {
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        <button type="submit">Log in</button>
+        <button type="submit" disabled={isLoading}>
+          {isLoading ? "Logging in..." : "Log in"}
+        </button>
 
         {error && <div className="error">{error}</div>}
       </form>
