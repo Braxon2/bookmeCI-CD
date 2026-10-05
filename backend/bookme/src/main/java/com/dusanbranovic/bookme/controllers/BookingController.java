@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/bookings")
 public class BookingController {
@@ -19,7 +21,7 @@ public class BookingController {
     }
 
     @PatchMapping("/{bookingID}")
-    public BookingSummaryDTO cancelBooking(@PathVariable Long bookingID){
+    public BookingSummaryDTO cancelBooking(@PathVariable UUID bookingID){
         return bookingService.cancelBooking(bookingID);
     }
 }

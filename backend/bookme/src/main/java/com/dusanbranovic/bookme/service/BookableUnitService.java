@@ -41,6 +41,7 @@ public class BookableUnitService {
 
     private final BookableUnitMapper bookableUnitMapper;
     private final PeriodPriceMapper periodPriceMapper;
+    private final PricingService pricingService;
 
     private static final Logger log = LoggerFactory.getLogger(BookableUnitService.class);
 
@@ -52,7 +53,8 @@ public class BookableUnitService {
             AddonMappingRepository addonMappingRepository,
             S3Service s3Service,
             BookableUnitMapper bookableUnitMapper,
-            PeriodPriceMapper periodPriceMapper
+            PeriodPriceMapper periodPriceMapper,
+            PricingService pricingService
     ) {
         this.bookableUnitRepository = bookableUnitRepository;
         this.periodPriceRepository = periodPriceRepository;
@@ -62,6 +64,7 @@ public class BookableUnitService {
         this.s3Service = s3Service;
         this.bookableUnitMapper = bookableUnitMapper;
         this.periodPriceMapper = periodPriceMapper;
+        this.pricingService = pricingService;
     }
 
     public PeriodPriceResponseDTO addPeriodPrice(
@@ -124,7 +127,11 @@ public class BookableUnitService {
         List<BookableUnitCardDTO> resultCards = new ArrayList<>();
         for (BookableUnit unit : availableUnits) {
             try {
-                double totalPrice = calculatePriceForDates(startDate, endDate, unit.getPeriodPriceList());
+                double totalPrice = pricingService.calculateUnitPrice(
+                        startDate,
+                        endDate,
+                        unit.getPeriodPriceList()
+                );
                 if (maxPrice != null && totalPrice > maxPrice) continue;
 
                 String imageUrl = null;
@@ -155,22 +162,6 @@ public class BookableUnitService {
         }
         int end = Math.min(start + pageable.getPageSize(), resultCards.size());
         return new PageImpl<>(resultCards.subList(start, end), pageable, resultCards.size());
-    }
-
-    private double calculatePriceForDates(LocalDate start, LocalDate end, List<PeriodPrice> prices) {
-        double totalPrice = 0.0;
-
-        for (LocalDate date = start; date.isBefore(end); date = date.plusDays(1)) {
-            LocalDate finalDate = date;
-
-            PeriodPrice priceForDay = prices.stream()
-                    .filter(p -> !finalDate.isBefore(p.getStartDate()) && !finalDate.isAfter(p.getEndDate()))
-                    .findFirst()
-                    .orElseThrow(() -> new RuntimeException("No price defined for date " + finalDate));
-
-            totalPrice += priceForDay.getPricePerNight();
-        }
-        return totalPrice;
     }
 
     @Transactional
@@ -281,7 +272,11 @@ public class BookableUnitService {
 
         List<ImageResponseDTO> unitImageDTO = s3Service.getUnitImages(unitId);
 
-        double totalPrice = calculatePriceForDates(startDate, endDate, unit.getPeriodPriceList());
+        double totalPrice = pricingService.calculateUnitPrice(
+                startDate,
+                endDate,
+                unit.getPeriodPriceList()
+        );
 
         log.info("Unit fetched successfully");
 
@@ -334,7 +329,7 @@ public class BookableUnitService {
                                 mapping.getId(),
                                 mapping.getAddon().getId(),
                                 mapping.getAddon().getName(),
-                                calculateAddonPrice(
+                                pricingService.calculateAddonPrice(
                                         startDate,
                                         endDate,
                                         mapping
@@ -344,68 +339,6 @@ public class BookableUnitService {
                 )
                 .toList();
     }
-
-    private double calculateAddonPrice(
-            LocalDate start,
-            LocalDate end,
-            AddonMapping addonMapping
-    ) {
-        List<PeriodPriceAddon> prices = addonMapping.getPeriodPriceAddons();
-
-        if (addonMapping.isPerNight()) {
-            return calculatePerNight(start, end, prices);
-        } else {
-            return calculateOnce(start, prices);
-        }
-    }
-
-    private double calculateOnce(
-            LocalDate start,
-            List<PeriodPriceAddon> prices
-    ) {
-        PeriodPriceAddon price = prices.stream()
-                .filter(p ->
-                        !start.isBefore(p.getStartDate()) &&
-                                !start.isAfter(p.getEndDate())
-                )
-                .reduce((firsy, second) -> second)
-                .orElseThrow(() -> {
-                    log.warn("No addon price defined");
-                    return new EntityNotFoundException("No addon price defined");
-                });
-
-        return price.getPrice();
-    }
-
-    private double calculatePerNight(
-            LocalDate start,
-            LocalDate end,
-            List<PeriodPriceAddon> prices
-    ) {
-
-        double totalPrice = 0.0;
-        for (LocalDate date = start; date.isBefore(end); date = date.plusDays(1)) {
-
-            LocalDate finalDate = date;
-            PeriodPriceAddon priceForDay = prices.stream()
-                    .filter(p ->
-                            !finalDate.isBefore(p.getStartDate()) &&
-                                    !finalDate.isAfter(p.getEndDate())
-                    )
-                    .findFirst()
-                    .orElseThrow(() -> {
-                                log.warn("No price defined for date " + finalDate);
-                                return new EntityNotFoundException(
-                                        "No price defined for date " + finalDate);
-                            }
-                    );
-
-            totalPrice += priceForDay.getPrice();
-        }
-
-        return totalPrice;
-    }
-
 
     public BookableUnitDetailedCardDTO getUnitInfo(UUID unitId) {
         BookableUnit unit = bookableUnitRepository.findByPublicId(unitId)

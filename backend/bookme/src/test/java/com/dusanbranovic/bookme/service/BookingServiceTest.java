@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -62,6 +63,8 @@ class BookingServiceTest {
     private AddonMappingRepository addonMappingRepository;
     @Mock
     private BookableUnitMapper bookableUnitMapper;
+    @Spy
+    private PricingService pricingService = new PricingService();
 
     @InjectMocks
     private BookingService bookingService;
@@ -176,13 +179,54 @@ class BookingServiceTest {
     }
 
     @Test
+    void bookAUnitUsesNewerOverlappingUnitAndAddonPrices() {
+        end = start.plusDays(3);
+        PeriodPrice october = new PeriodPrice(unit, 70, start.minusDays(8), end.plusDays(10), "October");
+        october.setId(1L);
+        PeriodPrice special = new PeriodPrice(unit, 100, start.minusDays(1), start.plusDays(1), "Special");
+        special.setId(2L);
+        unit.setPeriodPriceList(List.of(special, october));
+
+        Addon breakfast = new Addon("Breakfast");
+        breakfast.setId(7L);
+        AddonMapping mapping = new AddonMapping(true, unit, breakfast, start.minusDays(10));
+        PeriodPriceAddon regularAddonPrice = new PeriodPriceAddon(
+                mapping, 10, start.minusDays(8), end.plusDays(10)
+        );
+        regularAddonPrice.setId(1L);
+        PeriodPriceAddon specialAddonPrice = new PeriodPriceAddon(
+                mapping, 20, start.minusDays(1), start.plusDays(1)
+        );
+        specialAddonPrice.setId(2L);
+        mapping.setPeriodPriceAddons(List.of(specialAddonPrice, regularAddonPrice));
+
+        when(bookableUnitRepository.findByPublicId(unitId)).thenReturn(Optional.of(unit));
+        when(bookingRepository.countOverlappingBookings(any(), any(), any())).thenReturn(0L);
+        when(addonMappingRepository.findAvailableAddonForPeriod(unitId, 7L, start, end))
+                .thenReturn(Optional.of(mapping));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(bookableUnitMapper.toDTO(unit)).thenReturn(unitDTO());
+
+        BookingResponseDTO result = bookingService.bookAUnit(
+                unitId,
+                request(start, end, List.of(new AddonsRequestDTO(7L)))
+        );
+
+        assertEquals(320.0, result.totalPrice());
+        org.mockito.ArgumentCaptor<Booking> captor = org.mockito.ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(captor.capture());
+        assertEquals(50.0, captor.getValue().getAddonItems().getFirst().getPricePaid());
+    }
+
+    @Test
     void cancelBookingChangesStatusForTheOwningGuest() {
         Booking booking = booking(guest, BookingStatus.CONFIRMED);
-        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        UUID bookingId = booking.getPublicId();
+        when(bookingRepository.findByPublicId(bookingId)).thenReturn(Optional.of(booking));
         when(bookingRepository.save(booking)).thenReturn(booking);
         when(bookableUnitMapper.toDTO(unit)).thenReturn(unitDTO());
 
-        BookingSummaryDTO result = bookingService.cancelBooking(1L);
+        BookingSummaryDTO result = bookingService.cancelBooking(bookingId);
 
         assertEquals(BookingStatus.CANCELLED, result.status());
         assertEquals(BookingStatus.CANCELLED, booking.getStatus());
@@ -194,18 +238,40 @@ class BookingServiceTest {
         User ownerOfBooking = new User();
         ownerOfBooking.setId(99L);
         Booking booking = booking(ownerOfBooking, BookingStatus.CONFIRMED);
-        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        UUID bookingId = booking.getPublicId();
+        when(bookingRepository.findByPublicId(bookingId)).thenReturn(Optional.of(booking));
 
-        assertThrows(AccessDeniedException.class, () -> bookingService.cancelBooking(1L));
+        assertThrows(AccessDeniedException.class, () -> bookingService.cancelBooking(bookingId));
         verify(bookingRepository, never()).save(any());
     }
 
     @Test
     void cancelBookingRejectsAnAlreadyCancelledBooking() {
         Booking booking = booking(guest, BookingStatus.CANCELLED);
-        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        UUID bookingId = booking.getPublicId();
+        when(bookingRepository.findByPublicId(bookingId)).thenReturn(Optional.of(booking));
 
-        assertThrows(InvalidBookingStateException.class, () -> bookingService.cancelBooking(1L));
+        assertThrows(InvalidBookingStateException.class, () -> bookingService.cancelBooking(bookingId));
+    }
+
+    @Test
+    void cancelBookingRejectsCancellationOnTheDayBeforeCheckIn() {
+        Booking booking = booking(guest, BookingStatus.CONFIRMED);
+        booking.setCheckIn(LocalDate.now().plusDays(1).atStartOfDay());
+        booking.setCheckOut(LocalDate.now().plusDays(3).atStartOfDay());
+        UUID bookingId = booking.getPublicId();
+        when(bookingRepository.findByPublicId(bookingId)).thenReturn(Optional.of(booking));
+
+        InvalidBookingStateException exception = assertThrows(
+                InvalidBookingStateException.class,
+                () -> bookingService.cancelBooking(bookingId)
+        );
+
+        assertEquals(
+                "Bookings cannot be cancelled on the day before check-in or later.",
+                exception.getMessage()
+        );
+        verify(bookingRepository, never()).save(any());
     }
 
     private BookingRequestDTO request(LocalDate from, LocalDate to, List<AddonsRequestDTO> addons) {

@@ -11,6 +11,7 @@ import com.dusanbranovic.bookme.mappers.BookableUnitMapper;
 import com.dusanbranovic.bookme.models.*;
 import com.dusanbranovic.bookme.repository.*;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -34,6 +36,10 @@ public class BookingService {
     private final AddonMappingRepository addonMappingRepository;
 
     private final BookableUnitMapper bookableUnitMapper;
+    private final PricingService pricingService;
+
+    @Value("${booking.time-zone:Europe/Belgrade}")
+    private String bookingTimeZone = "Europe/Belgrade";
 
     private static final Logger log = LoggerFactory.getLogger(BookingService.class);
 
@@ -44,7 +50,8 @@ public class BookingService {
             BookableUnitRepository bookableUnitRepository,
             AddonRepository addonRepository,
             AddonMappingRepository addonMappingRepository,
-            BookableUnitMapper bookableUnitMapper
+            BookableUnitMapper bookableUnitMapper,
+            PricingService pricingService
     ) {
         this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
@@ -52,6 +59,7 @@ public class BookingService {
         this.addonRepository = addonRepository;
         this.addonMappingRepository = addonMappingRepository;
         this.bookableUnitMapper = bookableUnitMapper;
+        this.pricingService = pricingService;
     }
 
     @Transactional
@@ -139,7 +147,7 @@ public class BookingService {
         List<PeriodPrice> prices = unit.getPeriodPriceList();
 
         double totalPrice =
-                calculatePrice(
+                pricingService.calculateUnitPrice(
                         start,
                         end,
                         prices
@@ -151,7 +159,7 @@ public class BookingService {
         for (AddonMapping mapping : addonMappings) {
 
             double addonPrice =
-                    calculateAddonPrice(
+                    pricingService.calculateAddonPrice(
                             start,
                             end,
                             mapping
@@ -192,7 +200,7 @@ public class BookingService {
         for (AddonMapping mapping : addonMappings) {
 
             double historicalPriceForThisAddon =
-                    calculateAddonPrice(
+                    pricingService.calculateAddonPrice(
                             start,
                             end,
                             mapping
@@ -245,99 +253,9 @@ public class BookingService {
     }
 
 
-    private double calculatePrice(
-            LocalDate start,
-            LocalDate end,
-            List<PeriodPrice> prices
-    ) {
-
-        double totalPrice = 0.0;
-        for (LocalDate date = start; date.isBefore(end); date = date.plusDays(1)) {
-
-            LocalDate finalDate = date;
-            PeriodPrice priceForDay = prices.stream()
-                    .filter(p ->
-                            !finalDate.isBefore(p.getStartDate()) &&
-                                    !finalDate.isAfter(p.getEndDate())
-                    )
-                    .findFirst()
-                    .orElseThrow(() -> {
-                        log.warn("No price defined for date " + finalDate);
-                        return new EntityNotFoundException(
-                                "No price defined for date " + finalDate);
-                    });
-
-
-            totalPrice += priceForDay.getPricePerNight();
-        }
-
-        return totalPrice;
-    }
-
-    private double calculateAddonPrice(
-            LocalDate start,
-            LocalDate end,
-            AddonMapping addonMapping
-    ) {
-        List<PeriodPriceAddon> prices = addonMapping.getPeriodPriceAddons();
-
-        if (addonMapping.isPerNight()) {
-            return calculatePerNight(start, end, prices);
-        } else {
-            return calculateOnce(start, prices);
-        }
-    }
-
-    private double calculateOnce(
-            LocalDate start,
-            List<PeriodPriceAddon> prices
-    ) {
-        PeriodPriceAddon price = prices.stream()
-                .filter(p ->
-                        !start.isBefore(p.getStartDate()) &&
-                                !start.isAfter(p.getEndDate())
-                )
-                .reduce((firsy, second) -> second)
-                .orElseThrow(() -> {
-                    log.warn("No addon price defined");
-                    return new EntityNotFoundException("No addon price defined");
-                });
-
-        return price.getPrice();
-    }
-
-    private double calculatePerNight(
-            LocalDate start,
-            LocalDate end,
-            List<PeriodPriceAddon> prices
-    ) {
-
-        double totalPrice = 0.0;
-        for (LocalDate date = start; date.isBefore(end); date = date.plusDays(1)) {
-
-            LocalDate finalDate = date;
-            PeriodPriceAddon priceForDay = prices.stream()
-                    .filter(p ->
-                            !finalDate.isBefore(p.getStartDate()) &&
-                                    !finalDate.isAfter(p.getEndDate())
-                    )
-                    .findFirst()
-                    .orElseThrow(() -> {
-                                log.warn("No price defined for date " + finalDate);
-                                return new EntityNotFoundException(
-                                        "No price defined for date " + finalDate);
-                            }
-                    );
-
-            totalPrice += priceForDay.getPrice();
-        }
-
-        return totalPrice;
-    }
-
     @Transactional
-    public BookingSummaryDTO cancelBooking(Long bookingID) {
-        Booking bookingToCancel = bookingRepository.findById(bookingID).orElseThrow(() ->{
+    public BookingSummaryDTO cancelBooking(UUID bookingID) {
+        Booking bookingToCancel = bookingRepository.findByPublicId(bookingID).orElseThrow(() ->{
             log.error("Booking not found");
             return new EntityNotFoundException("Booking with " + bookingID + " not found");
         });
@@ -358,6 +276,16 @@ public class BookingService {
         if (bookingToCancel.getStatus() == BookingStatus.COMPLETED) {
             log.warn("User {} attempted to cancel booking {} which is already completed", currentUser.getId(), bookingID);
             throw new InvalidBookingStateException("Cannot cancel a completed booking.");
+        }
+
+        LocalDate today = LocalDate.now(ZoneId.of(bookingTimeZone));
+        LocalDate cancellationCutoff = bookingToCancel.getCheckIn().toLocalDate().minusDays(1);
+        if (!today.isBefore(cancellationCutoff)) {
+            log.warn("User {} attempted to cancel booking {} after its cancellation cutoff",
+                    currentUser.getId(), bookingID);
+            throw new InvalidBookingStateException(
+                    "Bookings cannot be cancelled on the day before check-in or later."
+            );
         }
 
         bookingToCancel.setStatus(BookingStatus.CANCELLED);

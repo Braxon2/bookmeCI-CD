@@ -52,14 +52,16 @@ const AddPeriodPriceAddon = () => {
 
   const priceForDay = (date) => {
     const currentDate = dayjs(date);
-    return [...prices].reverse().find((period) => {
+    return prices.filter((period) => {
       const startDate = dayjs(period.startDate);
       const endDate = dayjs(period.endDate);
       return (
         (currentDate.isAfter(startDate, "day") || currentDate.isSame(startDate, "day")) &&
         (currentDate.isBefore(endDate, "day") || currentDate.isSame(endDate, "day"))
       );
-    });
+    }).reduce((latest, period) => (
+      !latest || Number(period.id || 0) > Number(latest.id || 0) ? period : latest
+    ), null);
   };
 
   const handleBillingChange = async (nextValue) => {

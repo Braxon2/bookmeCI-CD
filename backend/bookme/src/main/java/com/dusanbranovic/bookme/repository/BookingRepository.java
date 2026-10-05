@@ -1,7 +1,9 @@
 package com.dusanbranovic.bookme.repository;
 
 import com.dusanbranovic.bookme.models.Booking;
+import com.dusanbranovic.bookme.models.BookingStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -42,6 +44,19 @@ WHERE b.guest.id = :userId
         Optional<Booking> findByPublicIdAndGuest_Email(
                 UUID publicId,
                 String email
+        );
+
+        @Modifying(clearAutomatically = true, flushAutomatically = true)
+        @Query("""
+UPDATE Booking b
+SET b.status = :completedStatus
+WHERE b.status = :confirmedStatus
+AND b.checkOut <= :currentDateTime
+""")
+        int completeExpiredBookings(
+                @Param("confirmedStatus") BookingStatus confirmedStatus,
+                @Param("completedStatus") BookingStatus completedStatus,
+                @Param("currentDateTime") LocalDateTime currentDateTime
         );
 
 }

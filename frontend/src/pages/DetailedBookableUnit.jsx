@@ -65,7 +65,8 @@ const DetailedBookableUnit = () => {
 
   const addonsTotal = chosenAddons.reduce((sum, id) => {
     const addon = addons?.find((item) => item.addonID === id);
-    return addon ? sum + addon.price * (addon.perNight ? nights : 1) : sum;
+    // The API already returns the add-on total for the selected stay.
+    return addon ? sum + Number(addon.price || 0) : sum;
   }, 0);
   const stayPrice = Number(unit?.totalPriceForStay) || 0;
   const totalPrice = stayPrice + addonsTotal;
@@ -254,7 +255,7 @@ const DetailedBookableUnit = () => {
                   onClick={() => toggleAddon(addon.addonID)}>
                   <span className="unit-addon-check" aria-hidden="true">{selected ? "✓" : "+"}</span>
                   <span className="unit-addon-copy"><strong>{addon.name}</strong>
-                    <small>{addon.perNight ? "Charged per night" : "One-time charge"}</small></span>
+                    <small>{addon.perNight ? "Total for selected nights" : "One-time charge"}</small></span>
                   <strong className="unit-addon-price">{formatPrice(addon.price)}</strong>
                 </button>;
               })}</div>

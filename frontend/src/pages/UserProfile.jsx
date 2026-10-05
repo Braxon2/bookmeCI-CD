@@ -10,6 +10,15 @@ const formatDate = (value) => value
 const formatPrice = (value) => new Intl.NumberFormat("en-GB", {
   style: "currency", currency: "EUR", minimumFractionDigits: 2,
 }).format(Number(value) || 0);
+const canCancelBooking = (checkIn) => {
+  if (!checkIn) return false;
+  const checkInDate = new Date(`${String(checkIn).slice(0, 10)}T00:00:00`);
+  const cancellationCutoff = new Date(checkInDate);
+  cancellationCutoff.setDate(cancellationCutoff.getDate() - 1);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today < cancellationCutoff;
+};
 
 const ReviewDialog = ({ booking, onClose, onSubmitted }) => {
   const apiURL = import.meta.env.VITE_API_URL || "";
@@ -154,6 +163,7 @@ const UserProfile = () => {
           {!bookingsLoading && usersBookings.length > 0 && <div className="profile-booking-list">
             {usersBookings.map((booking) => {
               const reviewed = reviewedBookings.includes(booking.id);
+              const cancellationAvailable = canCancelBooking(booking.checkIn);
               return <article className="profile-booking-card" key={booking.id}>
                 <header><div><span>Reservation</span><h3>{booking.bookableUnit.name}</h3></div>
                   <span className={`profile-status is-${booking.status.toLowerCase()}`}>{booking.status}</span></header>
@@ -164,7 +174,8 @@ const UserProfile = () => {
                   <div className="is-price"><span>Total</span><strong>{formatPrice(booking.totalPrice)}</strong></div>
                 </div>
                 {(booking.status === "CONFIRMED" || booking.status === "COMPLETED") && <footer>
-                  {booking.status === "CONFIRMED" && <button className="profile-cancel-button" type="button" onClick={() => setBookingToCancel(booking)}>Cancel reservation</button>}
+                  {booking.status === "CONFIRMED" && cancellationAvailable && <button className="profile-cancel-button" type="button" onClick={() => setBookingToCancel(booking)}>Cancel reservation</button>}
+                  {booking.status === "CONFIRMED" && !cancellationAvailable && <span className="profile-cancellation-closed">Cancellation is closed within one day of check-in.</span>}
                   {booking.status === "COMPLETED" && <button className="profile-review-button" type="button" disabled={reviewed}
                     onClick={() => setBookingToReview(booking)}>{reviewed ? "Review submitted ✓" : "Leave a review"}</button>}
                 </footer>}

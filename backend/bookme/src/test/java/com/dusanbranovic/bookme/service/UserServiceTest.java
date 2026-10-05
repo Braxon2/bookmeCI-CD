@@ -90,6 +90,11 @@ class UserServiceTest {
 
         assertEquals(newer.getPublicId(), result.getFirst().id());
         assertEquals(older.getPublicId(), result.getLast().id());
+        org.mockito.Mockito.verify(bookingRepository).completeExpiredBookings(
+                org.mockito.ArgumentMatchers.eq(BookingStatus.CONFIRMED),
+                org.mockito.ArgumentMatchers.eq(BookingStatus.COMPLETED),
+                org.mockito.ArgumentMatchers.any(java.time.LocalDateTime.class)
+        );
     }
 
     @Test

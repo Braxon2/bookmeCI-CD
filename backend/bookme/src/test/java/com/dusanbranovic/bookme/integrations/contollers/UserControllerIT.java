@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDate;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -42,6 +43,30 @@ class UserControllerIT extends AbstractControllerIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(booking.getPublicId().toString()))
                 .andExpect(jsonPath("$[0].totalPrice").value(240.0));
+    }
+
+    @Test
+    void loadingBookingsCompletesAConfirmedStayOnItsCheckoutDate() throws Exception {
+        LocalDate checkout = LocalDate.now();
+        Booking booking = bookingRepository.save(new Booking(
+                unit,
+                guest,
+                240.0,
+                checkout.minusDays(4),
+                checkout.minusDays(2).atStartOfDay(),
+                checkout.atStartOfDay(),
+                BookingStatus.CONFIRMED
+        ));
+
+        mockMvc.perform(get("/api/users/{id}/bookings", guest.getId()).with(asGuest()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(booking.getPublicId().toString()))
+                .andExpect(jsonPath("$[0].status").value("COMPLETED"));
+
+        assertEquals(
+                BookingStatus.COMPLETED,
+                bookingRepository.findByPublicId(booking.getPublicId()).orElseThrow().getStatus()
+        );
     }
 
     @Test

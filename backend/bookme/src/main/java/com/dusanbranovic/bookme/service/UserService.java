@@ -5,9 +5,11 @@ import com.dusanbranovic.bookme.dto.responses.GuestSummaryDTO;
 import com.dusanbranovic.bookme.exceptions.EntityNotFoundException;
 import com.dusanbranovic.bookme.mappers.BookableUnitMapper;
 import com.dusanbranovic.bookme.mappers.UserMapper;
+import com.dusanbranovic.bookme.models.BookingStatus;
 import com.dusanbranovic.bookme.models.User;
 import com.dusanbranovic.bookme.repository.BookingRepository;
 import com.dusanbranovic.bookme.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
@@ -15,6 +17,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -51,6 +55,7 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     public List<BookingSummaryDTO> getBookings(Long userID) {
 
         User guest = userRepository.findById(userID)
@@ -58,6 +63,12 @@ public class UserService {
                     log.error("User with id {} not found", userID);
                     return new EntityNotFoundException("User with ID " + userID + " not found");
                 });
+
+        bookingRepository.completeExpiredBookings(
+                BookingStatus.CONFIRMED,
+                BookingStatus.COMPLETED,
+                LocalDateTime.now(ZoneId.of("Europe/Belgrade"))
+        );
 
         return bookingRepository.findAllByGuestIdWithUnit(userID).stream().map(booking ->
                         new BookingSummaryDTO(

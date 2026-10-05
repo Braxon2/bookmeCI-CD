@@ -14,6 +14,7 @@ import com.dusanbranovic.bookme.models.AddonMapping;
 import com.dusanbranovic.bookme.models.BookableUnit;
 import com.dusanbranovic.bookme.models.PeriodPrice;
 import com.dusanbranovic.bookme.models.PeriodPriceAddon;
+import com.dusanbranovic.bookme.models.Property;
 import com.dusanbranovic.bookme.models.UnitFascilityMapping;
 import com.dusanbranovic.bookme.models.UnitFascillity;
 import com.dusanbranovic.bookme.repository.AddonMappingRepository;
@@ -26,7 +27,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -62,6 +67,8 @@ class BookableUnitServiceTest {
     private BookableUnitMapper bookableUnitMapper;
     @Mock
     private PeriodPriceMapper periodPriceMapper;
+    @Spy
+    private PricingService pricingService = new PricingService();
 
     @InjectMocks
     private BookableUnitService bookableUnitService;
@@ -180,6 +187,41 @@ class BookableUnitServiceTest {
 
         assertEquals(16, result.get(0).price());
         assertEquals(15, result.get(1).price());
+    }
+
+    @Test
+    void searchUsesTheNewestPriceForEveryOverlappingNight() {
+        LocalDate start = LocalDate.of(2026, 10, 9);
+        LocalDate end = LocalDate.of(2026, 10, 12);
+        PeriodPrice october = new PeriodPrice(
+                unit, 70, LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31), "October"
+        );
+        october.setId(1L);
+        PeriodPrice special = new PeriodPrice(
+                unit, 100, LocalDate.of(2026, 10, 8), LocalDate.of(2026, 10, 10), "Special"
+        );
+        special.setId(2L);
+        unit.setPeriodPriceList(List.of(special, october));
+        unit.setName("October room");
+
+        Property property = new Property();
+        property.setName("City hotel");
+        property.setAddress("Main Street 1");
+        property.setCity("Belgrade");
+        property.setCountry("Serbia");
+        property.setImages(new ArrayList<>());
+        unit.setProperty(property);
+
+        when(bookableUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(unit));
+
+        Page<com.dusanbranovic.bookme.dto.responses.BookableUnitCardDTO> result =
+                bookableUnitService.searchUnits(
+                        "Belgrade", "Serbia", 2, 0, start, end,
+                        null, null, null, PageRequest.of(0, 20)
+                );
+
+        assertEquals(1, result.getTotalElements());
+        assertEquals(270.0, result.getContent().getFirst().totalPriceForStay());
     }
 
     @Test
