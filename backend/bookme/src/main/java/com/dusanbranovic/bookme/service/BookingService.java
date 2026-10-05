@@ -70,20 +70,12 @@ public class BookingService {
                     );
                 });
 
-
         LocalDate start = bookingRequestDTO.start_date();
         LocalDate end = bookingRequestDTO.end_date();
 
         if (start == null || end == null || !start.isBefore(end)) {
-            log.error(
-                    "Invalid booking date range: {} - {}",
-                    start,
-                    end
-            );
-
-            throw new InvalidDateRangeException(
-                    "Start date must be before end date"
-            );
+            log.error("Invalid booking date range: {} - {}", start, end);
+            throw new InvalidDateRangeException("Start date must be before end date");
         }
 
 
@@ -91,24 +83,11 @@ public class BookingService {
         LocalDateTime checkOut = end.atStartOfDay();
 
 
-        long overlappingCount =
-                bookingRepository.countOverlappingBookings(
-                        unitId,
-                        checkIn,
-                        checkOut
-                );
+        long overlappingCount = bookingRepository.countOverlappingBookings(unitId, checkIn,checkOut);
 
         if (overlappingCount >= unit.getTotalUnits()) {
-            log.error(
-                    "No available units for unit {} between {} and {}",
-                    unitId,
-                    start,
-                    end
-            );
-
-            throw new OverlappingBookingExcpetion(
-                    "No available units for selected dates"
-            );
+            log.error("No available units for unit {} between {} and {}", unitId, start, end);
+            throw new OverlappingBookingExcpetion("No available units for selected dates");
         }
 
 

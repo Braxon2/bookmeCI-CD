@@ -1,9 +1,8 @@
 import "./styles/Navbar.css";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 const Navbar = () => {
   const { isAuthenticated, isOwner, isAdmin, logout } = useAuth();
-  const location = useLocation();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -56,6 +55,12 @@ const Navbar = () => {
         {isAdmin && (
           <Link to="/addons">
             <li>Addons</li>
+          </Link>
+        )}
+
+        {isAdmin && (
+          <Link to="/property-types">
+            <li>Property Types</li>
           </Link>
         )}
 

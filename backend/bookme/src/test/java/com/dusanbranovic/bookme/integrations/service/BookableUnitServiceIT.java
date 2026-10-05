@@ -1,28 +1,11 @@
 package com.dusanbranovic.bookme.integrations.service;
 
-import com.dusanbranovic.bookme.dto.requests.AddFacilitiesRequestDTO;
-import com.dusanbranovic.bookme.dto.requests.PeriodPriceRequestDTO;
-import com.dusanbranovic.bookme.dto.responses.BookableUnitCardDTO;
-import com.dusanbranovic.bookme.dto.responses.BookableUnitFacilitiesResponseDTO;
-import com.dusanbranovic.bookme.dto.responses.PeriodPriceResponseDTO;
-import com.dusanbranovic.bookme.exceptions.EntityNotFoundException;
-import com.dusanbranovic.bookme.models.*;
 import com.dusanbranovic.bookme.repository.*;
 import com.dusanbranovic.bookme.service.BookableUnitService;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @ActiveProfiles("test")

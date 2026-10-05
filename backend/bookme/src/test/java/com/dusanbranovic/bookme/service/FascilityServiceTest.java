@@ -5,80 +5,70 @@ import com.dusanbranovic.bookme.dto.responses.FascilityResponseDTO;
 import com.dusanbranovic.bookme.exceptions.EntityAlreadyExistsExcpetion;
 import com.dusanbranovic.bookme.models.Fascillity;
 import com.dusanbranovic.bookme.repository.FasiliityRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class FascilityServiceTest {
 
-    @Mock
-    private FasiliityRepository fasiliityRepository;
+    @Mock private FasiliityRepository fascilityRepository;
+    @InjectMocks private FascilityService fascilityService;
 
-    @InjectMocks
-    private FascilityService fascilityService;
+    @Test
+    void addFacilityPersistsAndReturnsANewFacility() {
+        when(fascilityRepository.findByName("Garden")).thenReturn(Optional.empty());
+        when(fascilityRepository.save(any(Fascillity.class))).thenAnswer(invocation -> {
+            Fascillity saved = invocation.getArgument(0);
+            saved.setId(8L);
+            return saved;
+        });
 
-    private Fascillity gardenFascillity;
-    private Fascillity poolFascillity;
-    private FascilityRequestDTO gardenRequestDTO;
+        FascilityResponseDTO result = fascilityService.addFascility(new FascilityRequestDTO("Garden"));
 
-    @BeforeEach
-    void setUp() {
-        gardenFascillity = new Fascillity("Garden");
-        gardenFascillity.setId(1L);
-
-        poolFascillity = new Fascillity("Pool");
-        poolFascillity.setId(2L);
-
-        gardenRequestDTO = new FascilityRequestDTO("Garden");
+        assertEquals(8L, result.id());
+        assertEquals("Garden", result.name());
+        ArgumentCaptor<Fascillity> captor = ArgumentCaptor.forClass(Fascillity.class);
+        verify(fascilityRepository).save(captor.capture());
+        assertEquals("Garden", captor.getValue().getName());
     }
 
     @Test
-    void addFascility() {
-        Fascillity fascillity = new Fascillity("Garden");
-        when(fasiliityRepository.findByName(fascillity.getName())).thenReturn(Optional.empty());;
-        FascilityResponseDTO savedFascililty = fascilityService.addFascility(gardenRequestDTO);
-        assertNotNull(savedFascililty);
-        assertEquals(fascillity.getName(),savedFascililty.name());
+    void addFacilityRejectsADuplicateName() {
+        when(fascilityRepository.findByName("Garden"))
+                .thenReturn(Optional.of(new Fascillity("Garden")));
+
+        assertThrows(
+                EntityAlreadyExistsExcpetion.class,
+                () -> fascilityService.addFascility(new FascilityRequestDTO("Garden"))
+        );
+        verify(fascilityRepository, never()).save(any());
     }
 
     @Test
-    void addFascility_ThrowsEntityAlreadyExistEception() {
-        FascilityRequestDTO dto = new FascilityRequestDTO("Garden");
-        Fascillity fascillity = new Fascillity("Garden");
-        when(fasiliityRepository.findByName(dto.name())).thenReturn(Optional.of(fascillity));;
-        assertThrows(EntityAlreadyExistsExcpetion.class,() ->fascilityService.addFascility(dto));
-    }
+    void getFacilitiesMapsAllStoredFacilities() {
+        Fascillity garden = new Fascillity("Garden");
+        garden.setId(1L);
+        Fascillity pool = new Fascillity("Pool");
+        pool.setId(2L);
+        when(fascilityRepository.findAll()).thenReturn(List.of(garden, pool));
 
-    @Test
-    void getFascilities() {
-        List<Fascillity> fascillities = Arrays.asList(gardenFascillity, poolFascillity);
-        when(fasiliityRepository.findAll()).thenReturn(fascillities);
+        List<FascilityResponseDTO> result = fascilityService.getFascilities();
 
-        List<FascilityResponseDTO> results = fascilityService.getFascilities();
-
-        assertNotNull(results);
-        assertEquals(2, results.size());
-
-        FascilityResponseDTO firstResult = results.get(0);
-        assertEquals(1L, firstResult.id());
-        assertEquals("Garden", firstResult.name());
-
-        FascilityResponseDTO secondResult = results.get(1);
-        assertEquals(2L, secondResult.id());
-        assertEquals("Pool", secondResult.name());
-
-        verify(fasiliityRepository).findAll();
-        verify(fasiliityRepository, times(1)).findAll();
+        assertEquals(List.of("Garden", "Pool"), result.stream().map(FascilityResponseDTO::name).toList());
+        assertEquals(List.of(1L, 2L), result.stream().map(FascilityResponseDTO::id).toList());
     }
 }

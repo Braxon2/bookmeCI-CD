@@ -2,154 +2,237 @@ package com.dusanbranovic.bookme.service;
 
 import com.dusanbranovic.bookme.dto.requests.AddonsRequestDTO;
 import com.dusanbranovic.bookme.dto.requests.BookingRequestDTO;
+import com.dusanbranovic.bookme.dto.responses.BookableUnitsResponseDTO;
 import com.dusanbranovic.bookme.dto.responses.BookingResponseDTO;
+import com.dusanbranovic.bookme.dto.responses.BookingSummaryDTO;
 import com.dusanbranovic.bookme.exceptions.EntityNotFoundException;
+import com.dusanbranovic.bookme.exceptions.InvalidBookingStateException;
 import com.dusanbranovic.bookme.exceptions.InvalidDateRangeException;
 import com.dusanbranovic.bookme.exceptions.OverlappingBookingExcpetion;
+import com.dusanbranovic.bookme.mappers.BookableUnitMapper;
+import com.dusanbranovic.bookme.models.Addon;
+import com.dusanbranovic.bookme.models.AddonMapping;
 import com.dusanbranovic.bookme.models.BookableUnit;
 import com.dusanbranovic.bookme.models.Booking;
+import com.dusanbranovic.bookme.models.BookingStatus;
 import com.dusanbranovic.bookme.models.PeriodPrice;
+import com.dusanbranovic.bookme.models.PeriodPriceAddon;
 import com.dusanbranovic.bookme.models.User;
+import com.dusanbranovic.bookme.repository.AddonMappingRepository;
 import com.dusanbranovic.bookme.repository.AddonRepository;
 import com.dusanbranovic.bookme.repository.BookableUnitRepository;
 import com.dusanbranovic.bookme.repository.BookingRepository;
+import com.dusanbranovic.bookme.repository.UserRepository;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 @ExtendWith(MockitoExtension.class)
 class BookingServiceTest {
 
     @Mock
     private BookingRepository bookingRepository;
-
+    @Mock
+    private UserRepository userRepository;
     @Mock
     private BookableUnitRepository bookableUnitRepository;
     @Mock
     private AddonRepository addonRepository;
+    @Mock
+    private AddonMappingRepository addonMappingRepository;
+    @Mock
+    private BookableUnitMapper bookableUnitMapper;
 
     @InjectMocks
     private BookingService bookingService;
 
-    /*
-    @Test
-    void bookAUnit_unitNotFound_throwsException() {
-        when(bookableUnitRepository.findById(1L)).thenReturn(Optional.empty());
+    private UUID unitId;
+    private BookableUnit unit;
+    private User guest;
+    private LocalDate start;
+    private LocalDate end;
 
-        BookingRequestDTO dto = new BookingRequestDTO(
-                LocalDate.now(),
-                LocalDate.now().plusDays(1),
-                List.of()
-        );
-
-        assertThrows(EntityNotFoundException.class,
-                () -> bookingService.bookAUnit(1L, dto));
-    }
-
-    @Test
-    void bookAUnit_startAfterEnd_throwsException() {
-        BookableUnit unit = new BookableUnit();
-        when(bookableUnitRepository.findById(1L)).thenReturn(Optional.of(unit));
-
-        BookingRequestDTO dto = new BookingRequestDTO(
-                LocalDate.now(),
-                LocalDate.now(),
-                List.of()
-        );
-
-        assertThrows(InvalidDateRangeException.class,
-                () -> bookingService.bookAUnit(1L, dto));
-    }
-
-    @Test
-    void bookAUnit_noAvailableUnits_throwsException() {
-        BookableUnit unit = new BookableUnit();
-        unit.setTotalUnits(1);
-
-        when(bookableUnitRepository.findById(1L)).thenReturn(Optional.of(unit));
-        when(bookingRepository.countOverlappingBookings(
-                anyLong(), any(), any()))
-                .thenReturn(1L);
-
-        BookingRequestDTO dto = new BookingRequestDTO(
-                LocalDate.now(),
-                LocalDate.now().plusDays(1),
-                List.of()
-        );
-
-        assertThrows(OverlappingBookingExcpetion.class,
-                () -> bookingService.bookAUnit(1L, dto));
-    }
-
-    @Test
-    void bookAUnit_addonNotFound_throwsException() {
-        BookableUnit unit = new BookableUnit();
-        when(bookableUnitRepository.findById(1L)).thenReturn(Optional.of(unit));
-        when(addonRepository.findById(10L)).thenReturn(Optional.empty());
-
-        BookingRequestDTO dto = new BookingRequestDTO(
-                LocalDate.now(),
-                LocalDate.now().plusDays(1),
-                List.of(new AddonsRequestDTO(10L))
-        );
-
-        assertThrows(EntityNotFoundException.class,
-                () -> bookingService.bookAUnit(1L, dto));
-    }
-
-    /*
-    @Test
-    void bookAUnit_validData_createsBooking() {
-        BookableUnit unit = new BookableUnit();
-        unit.setId(1L);
+    @BeforeEach
+    void setUp() {
+        unitId = UUID.randomUUID();
+        unit = new BookableUnit();
+        unit.setId(10L);
+        unit.setPublicId(unitId);
+        unit.setName("Deluxe room");
         unit.setTotalUnits(2);
+        start = LocalDate.now().plusDays(2);
+        end = start.plusDays(2);
+        unit.setPeriodPriceList(List.of(
+                new PeriodPrice(unit, 100, start, end, "Standard")
+        ));
+        guest = new User();
+        guest.setId(44L);
+        guest.setEmail("guest@test.com");
+        guest.setFirstName("Test");
+        guest.setLastName("Guest");
+        setCurrentUser(guest);
+    }
 
-        PeriodPrice price = new PeriodPrice(
-                unit, 100,
-                LocalDate.now(),
-                LocalDate.now().plusDays(10),
-                "SUMMER"
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
+
+    @Test
+    void bookAUnitRejectsAnUnknownUnit() {
+        when(bookableUnitRepository.findByPublicId(unitId)).thenReturn(Optional.empty());
+
+        assertThrows(
+                EntityNotFoundException.class,
+                () -> bookingService.bookAUnit(unitId, request(start, end, List.of()))
         );
-        unit.setPeriodPriceList(List.of(price));
+    }
 
-        User user = new User();
+    @Test
+    void bookAUnitRejectsInvalidDates() {
+        when(bookableUnitRepository.findByPublicId(unitId)).thenReturn(Optional.of(unit));
 
-        Authentication auth = mock(Authentication.class);
-        SecurityContext context = mock(SecurityContext.class);
-        when(context.getAuthentication()).thenReturn(auth);
-        when(auth.getPrincipal()).thenReturn(user);
-        SecurityContextHolder.setContext(context);
+        assertThrows(
+                InvalidDateRangeException.class,
+                () -> bookingService.bookAUnit(unitId, request(start, start, List.of()))
+        );
+        verify(bookingRepository, never()).save(any());
+    }
 
-        when(bookableUnitRepository.findById(1L)).thenReturn(Optional.of(unit));
-        when(bookingRepository.save(any(Booking.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-        when(bookingRepository.countOverlappingBookings(any(), any(), any()))
-                .thenReturn(0L);
+    @Test
+    void bookAUnitRejectsACompletelyBookedUnit() {
+        when(bookableUnitRepository.findByPublicId(unitId)).thenReturn(Optional.of(unit));
+        when(bookingRepository.countOverlappingBookings(
+                unitId, start.atStartOfDay(), end.atStartOfDay()
+        )).thenReturn(2L);
 
-        BookingRequestDTO dto = new BookingRequestDTO(
-                LocalDate.now(),
-                LocalDate.now().plusDays(2),
-                List.of()
+        assertThrows(
+                OverlappingBookingExcpetion.class,
+                () -> bookingService.bookAUnit(unitId, request(start, end, List.of()))
+        );
+    }
+
+    @Test
+    void bookAUnitRejectsAnUnavailableAddon() {
+        when(bookableUnitRepository.findByPublicId(unitId)).thenReturn(Optional.of(unit));
+        when(bookingRepository.countOverlappingBookings(any(), any(), any())).thenReturn(0L);
+        when(addonMappingRepository.findAvailableAddonForPeriod(unitId, 7L, start, end))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                EntityNotFoundException.class,
+                () -> bookingService.bookAUnit(
+                        unitId,
+                        request(start, end, List.of(new AddonsRequestDTO(7L)))
+                )
+        );
+    }
+
+    @Test
+    void bookAUnitCalculatesNightlyAndAddonPricesAndSavesSnapshots() {
+        Addon breakfast = new Addon("Breakfast");
+        breakfast.setId(7L);
+        AddonMapping mapping = new AddonMapping(true, unit, breakfast, start.minusDays(1));
+        mapping.setPeriodPriceAddons(List.of(new PeriodPriceAddon(mapping, 10, start, end)));
+        when(bookableUnitRepository.findByPublicId(unitId)).thenReturn(Optional.of(unit));
+        when(bookingRepository.countOverlappingBookings(any(), any(), any())).thenReturn(0L);
+        when(addonMappingRepository.findAvailableAddonForPeriod(unitId, 7L, start, end))
+                .thenReturn(Optional.of(mapping));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(bookableUnitMapper.toDTO(unit)).thenReturn(unitDTO());
+
+        BookingResponseDTO result = bookingService.bookAUnit(
+                unitId,
+                request(start, end, List.of(new AddonsRequestDTO(7L), new AddonsRequestDTO(7L)))
         );
 
-        BookingResponseDTO response =
-                bookingService.bookAUnit(1L, dto);
+        assertEquals(220, result.totalPrice());
+        assertEquals(BookingStatus.CONFIRMED, result.status());
+        org.mockito.ArgumentCaptor<Booking> captor = org.mockito.ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(captor.capture());
+        assertEquals(1, captor.getValue().getAddonItems().size());
+        assertEquals("Breakfast", captor.getValue().getAddonItems().getFirst().getAddonNameSnapshot());
+        assertEquals(20, captor.getValue().getAddonItems().getFirst().getPricePaid());
+    }
 
-        assertEquals(200, response.totalPrice());
-        verify(bookingRepository).save(any(Booking.class));
-    }*/
+    @Test
+    void cancelBookingChangesStatusForTheOwningGuest() {
+        Booking booking = booking(guest, BookingStatus.CONFIRMED);
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(bookingRepository.save(booking)).thenReturn(booking);
+        when(bookableUnitMapper.toDTO(unit)).thenReturn(unitDTO());
 
+        BookingSummaryDTO result = bookingService.cancelBooking(1L);
+
+        assertEquals(BookingStatus.CANCELLED, result.status());
+        assertEquals(BookingStatus.CANCELLED, booking.getStatus());
+        verify(bookingRepository).save(booking);
+    }
+
+    @Test
+    void cancelBookingRejectsAnotherGuestsBooking() {
+        User ownerOfBooking = new User();
+        ownerOfBooking.setId(99L);
+        Booking booking = booking(ownerOfBooking, BookingStatus.CONFIRMED);
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+
+        assertThrows(AccessDeniedException.class, () -> bookingService.cancelBooking(1L));
+        verify(bookingRepository, never()).save(any());
+    }
+
+    @Test
+    void cancelBookingRejectsAnAlreadyCancelledBooking() {
+        Booking booking = booking(guest, BookingStatus.CANCELLED);
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+
+        assertThrows(InvalidBookingStateException.class, () -> bookingService.cancelBooking(1L));
+    }
+
+    private BookingRequestDTO request(LocalDate from, LocalDate to, List<AddonsRequestDTO> addons) {
+        return new BookingRequestDTO(from, to, addons);
+    }
+
+    private BookableUnitsResponseDTO unitDTO() {
+        return new BookableUnitsResponseDTO(unitId, 4, 40, 2, 1, 3, 1, "Deluxe room", List.of());
+    }
+
+    private Booking booking(User bookingGuest, BookingStatus status) {
+        Booking booking = new Booking(
+                unit,
+                bookingGuest,
+                200.0,
+                LocalDate.now(),
+                start.atStartOfDay(),
+                end.atStartOfDay(),
+                status
+        );
+        booking.setId(1L);
+        return booking;
+    }
+
+    private void setCurrentUser(User user) {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(user, null, List.of())
+        );
+    }
 }

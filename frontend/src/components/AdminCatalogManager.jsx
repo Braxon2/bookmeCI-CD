@@ -3,7 +3,15 @@ import { useFetch } from "../hooks/useFetch";
 import usePost from "../hooks/usePost";
 import "./styles/AdminCatalogManager.css";
 
-const AdminCatalogManager = ({ title, description, itemLabel, endpoint, kind }) => {
+const AdminCatalogManager = ({
+  title,
+  description,
+  itemLabel,
+  endpoint,
+  kind,
+  example,
+  symbol,
+}) => {
   const apiURL = import.meta.env.VITE_API_URL || "";
   const { data, loading, error: fetchError } = useFetch(`${apiURL}${endpoint}`);
   const { isLoading, error: postError, post } = usePost();
@@ -42,7 +50,7 @@ const AdminCatalogManager = ({ title, description, itemLabel, endpoint, kind }) 
             <p>{description}</p>
           </div>
           <div className={`admin-catalog-symbol is-${kind}`} aria-hidden="true">
-            {kind === "addon" ? "+" : "✓"}
+            {symbol ?? (kind === "addon" ? "+" : "✓")}
           </div>
         </header>
 
@@ -56,7 +64,7 @@ const AdminCatalogManager = ({ title, description, itemLabel, endpoint, kind }) 
             <label htmlFor={`${kind}-name`}>{itemLabel} name</label>
             <div className="admin-create-row">
               <input id={`${kind}-name`} value={name} onChange={(event) => setName(event.target.value)}
-                placeholder={`e.g. ${kind === "addon" ? "Airport transfer" : kind === "unit" ? "Air conditioning" : "Swimming pool"}`} />
+                placeholder={`e.g. ${example ?? (kind === "addon" ? "Airport transfer" : kind === "unit" ? "Air conditioning" : "Swimming pool")}`} />
               <button type="submit" disabled={isLoading}>{isLoading ? "Adding..." : `Add ${itemLabel.toLowerCase()}`}</button>
             </div>
             {(localError || postError) && <p className="admin-form-error" role="alert">{localError || postError}</p>}

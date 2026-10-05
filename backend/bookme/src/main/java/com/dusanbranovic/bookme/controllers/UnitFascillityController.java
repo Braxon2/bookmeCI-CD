@@ -4,6 +4,7 @@ package com.dusanbranovic.bookme.controllers;
 import com.dusanbranovic.bookme.dto.requests.UnitFascilityRequestDTO;
 import com.dusanbranovic.bookme.dto.responses.UnitFascilityResponseDTO;
 import com.dusanbranovic.bookme.service.UnitFascillityService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,7 +20,7 @@ public class UnitFascillityController {
     }
 
     @PostMapping
-    public UnitFascilityResponseDTO addFascility(@RequestBody UnitFascilityRequestDTO dto){
+    public UnitFascilityResponseDTO addFascility(@Valid @RequestBody UnitFascilityRequestDTO dto){
         return unitFascillityService.addUnitFascility(dto);
     }
 

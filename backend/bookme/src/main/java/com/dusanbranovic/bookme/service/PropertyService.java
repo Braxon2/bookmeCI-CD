@@ -189,64 +189,6 @@ public class PropertyService {
 
     }
 
-   /* public ReviewResponseDTO addReview(ReviewRequestDTO dto, Long pid) {
-
-        Property property = propertyRepository.findById(pid).orElseThrow(() ->{
-            log.error("Property not found");
-            return new EntityNotFoundException("Property with id " + pid + " not found");
-        });
-
-        //provera da li je imao rezervaciju koju je iskoristio
-
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        User guest = (User) auth.getPrincipal();
-
-        Review review = new Review();
-        review.setReviewer(guest);
-        review.setProperty(property);
-        review.setText(dto.text());
-        review.setRating(dto.rating());
-        review.setCreatedAt(LocalDateTime.now());
-
-        log.debug("Created review body {}", review);
-
-
-        reviewRepository.save(review);
-
-
-        log.info("Review created successfully");
-
-        return new ReviewResponseDTO(
-                review.getId(),
-                review.getRating(),
-                review.getText(),
-                userMapper.toDTO(review.getReviewer()),
-                propertyMapper.toDTO(review.getProperty()),
-                review.getCreatedAt());
-    }
-
-    public List<ReviewResponseDTO> getReviews(Long pid) {
-
-        Property property = propertyRepository.findById(pid).orElseThrow(() ->{
-            log.error("Property not found");
-            return new EntityNotFoundException("Property with id " + pid + " not found");
-        });
-
-        log.info("Reviews successfully fetched");
-
-        return property.getReviews().
-                stream().
-                map(review ->
-                        new ReviewResponseDTO(review.getId(),
-                review.getRating(),
-                review.getText(),
-                userMapper.toDTO(review.getReviewer()),
-                propertyMapper.toDTO(review.getProperty()),
-                review.getCreatedAt()
-                        )
-                ).collect(Collectors.toList());
-    }*/
-
 
     public List<PropertyDTO> getPropertiesFromOwner(Long userID) {
         User owner = userRepository.findById(userID)

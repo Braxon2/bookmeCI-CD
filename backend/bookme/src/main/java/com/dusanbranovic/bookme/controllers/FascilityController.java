@@ -3,6 +3,7 @@ package com.dusanbranovic.bookme.controllers;
 import com.dusanbranovic.bookme.dto.requests.FascilityRequestDTO;
 import com.dusanbranovic.bookme.dto.responses.FascilityResponseDTO;
 import com.dusanbranovic.bookme.service.FascilityService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,7 +19,7 @@ public class FascilityController {
     }
 
     @PostMapping
-    public FascilityResponseDTO addFascility(@RequestBody FascilityRequestDTO dto){
+    public FascilityResponseDTO addFascility(@Valid @RequestBody FascilityRequestDTO dto){
         return fascilityService.addFascility(dto);
     }
 

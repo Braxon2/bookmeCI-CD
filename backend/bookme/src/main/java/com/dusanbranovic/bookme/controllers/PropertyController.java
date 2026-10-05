@@ -10,6 +10,7 @@ import com.dusanbranovic.bookme.dto.responses.PropertyDTO;
 import com.dusanbranovic.bookme.dto.responses.ReviewResponseDTO;
 import com.dusanbranovic.bookme.service.PropertyService;
 import com.dusanbranovic.bookme.service.S3Service;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -47,7 +48,7 @@ public class PropertyController {
 
     @PostMapping
     public PropertyDTO addPorperty(
-            @RequestBody PropertyRequestDTO dto,
+            @Valid @RequestBody PropertyRequestDTO dto,
             Principal principal
     ){
         return propertyService.addProperty(dto, principal.getName());
@@ -72,7 +73,7 @@ public class PropertyController {
     @PostMapping("/{pid}/add-unit")
     public BookableUnitsResponseDTO addUnit(
             @PathVariable UUID pid,
-            @RequestBody BookableUnitRequestDTO dto
+            @Valid @RequestBody BookableUnitRequestDTO dto
     ){
         return propertyService.addUnit(pid, dto);
     }

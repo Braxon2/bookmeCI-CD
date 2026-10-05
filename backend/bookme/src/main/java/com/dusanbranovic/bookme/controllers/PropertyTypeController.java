@@ -4,6 +4,7 @@ import com.dusanbranovic.bookme.dto.requests.PropertyTypeRequestDTO;
 import com.dusanbranovic.bookme.dto.responses.PropertyTypeDTO;
 import com.dusanbranovic.bookme.models.PropertyType;
 import com.dusanbranovic.bookme.service.PropertyTypeService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,7 +24,7 @@ public class PropertyTypeController {
     }
 
     @PostMapping
-    public PropertyType addType(@RequestBody PropertyTypeRequestDTO dto){
+    public PropertyType addType(@Valid @RequestBody PropertyTypeRequestDTO dto){
         return propertyTypeService.addType(dto);
     }
 }

@@ -3,6 +3,7 @@ package com.dusanbranovic.bookme.controllers;
 import com.dusanbranovic.bookme.dto.requests.AddonRequestDTO;
 import com.dusanbranovic.bookme.dto.responses.AddonResponseDTO;
 import com.dusanbranovic.bookme.service.AddonService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,7 +24,7 @@ public class AddonController {
     }
 
     @PostMapping
-    public AddonResponseDTO addAddon(@RequestBody AddonRequestDTO dto){
+    public AddonResponseDTO addAddon(@Valid @RequestBody AddonRequestDTO dto){
         return addonService.addAddon(dto);
     }
 

@@ -92,22 +92,11 @@ public class AddonService {
             );
         }
 
-        AddonMapping addonMapping =
-                new AddonMapping(
-                        false,
-                        unit,
-                        addon,
-                        LocalDate.now()
-                );
+        AddonMapping addonMapping = new AddonMapping(false, unit, addon, LocalDate.now());
 
-        AddonMapping savedAddonMapping =
-                addonMappingRepository.save(addonMapping);
+        AddonMapping savedAddonMapping = addonMappingRepository.save(addonMapping);
 
-        log.info(
-                "Addon {} added to unit {}",
-                addon.getId(),
-                unitId
-        );
+        log.info("Addon {} added to unit {}", addon.getId(), unitId);
 
         return new AddonToAddResponseDTO(
                 savedAddonMapping.getId(),

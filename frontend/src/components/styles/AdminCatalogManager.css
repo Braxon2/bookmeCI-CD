@@ -17,6 +17,7 @@
 .admin-catalog-symbol { display: grid; width: 72px; height: 72px; place-items: center; flex: 0 0 auto; border-radius: 22px; background: #eaf8f1; color: #16825d; font-size: 2rem; font-weight: 350; transform: rotate(-3deg); }
 .admin-catalog-symbol.is-addon { background: #fff1e8; color: #d75e17; }
 .admin-catalog-symbol.is-unit { background: #eef4ff; color: var(--admin-blue); }
+.admin-catalog-symbol.is-property-type { background: #f2edff; color: #6941c6; }
 .admin-create-card { display: grid; grid-template-columns: minmax(230px, 0.75fr) minmax(0, 1.25fr); gap: 44px; padding: 28px; margin-bottom: 22px; border: 1px solid var(--admin-border); border-radius: 20px; background: #fff; box-shadow: 0 15px 42px rgba(31, 45, 72, 0.08); }
 .admin-create-card h2 { margin: 5px 0 8px; font-size: 1.45rem; letter-spacing: -0.025em; }
 .admin-create-card > div p { margin: 0; color: var(--admin-muted); font-size: 0.82rem; line-height: 1.55; }

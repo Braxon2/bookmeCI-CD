@@ -185,10 +185,6 @@ public class S3Service {
             String email
     ) {
 
-        /*
-         * Normal lookup here.
-         * NO pessimistic lock because we're outside a transaction.
-         */
         Property propertyForAuthorization = propertyRepository
                 .findByPublicId(propertyPublicId)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -197,9 +193,7 @@ public class S3Service {
                                 + " not found"
                 ));
 
-        /*
-         * Check ownership before uploading anything to S3.
-         */
+
         if (!propertyForAuthorization
                 .getOwner()
                 .getEmail()
@@ -223,9 +217,6 @@ public class S3Service {
 
         try {
 
-            /*
-             * 1. Upload to S3
-             */
             PutObjectRequest request = PutObjectRequest.builder()
                     .bucket(bucketName)
                     .key(key)
@@ -239,15 +230,8 @@ public class S3Service {
 
             uploaded = true;
 
-            /*
-             * 2. Start database transaction
-             */
             PropertyImage savedImage = transactionTemplate.execute(status -> {
 
-                /*
-                 * NOW pessimistic locking is valid,
-                 * because we're inside an active transaction.
-                 */
                 Property property = propertyRepository
                         .findByPublicIdForUpdate(propertyPublicId)
                         .orElseThrow(() -> new EntityNotFoundException(
@@ -256,10 +240,6 @@ public class S3Service {
                                         + " not found"
                         ));
 
-                /*
-                 * Re-check authorization because the entity has
-                 * been fetched again inside the transaction.
-                 */
                 if (!property
                         .getOwner()
                         .getEmail()
@@ -302,9 +282,6 @@ public class S3Service {
                 );
             }
 
-            /*
-             * 3. Generate presigned URL
-             */
             return new ImageResponseDTO(
                     savedImage.getId(),
                     createPresignedGetUrl(savedImage.getS3Key()),
@@ -328,10 +305,6 @@ public class S3Service {
             );
 
         } catch (RuntimeException e) {
-
-            /*
-             * Database operation failed after successful S3 upload.
-             */
             if (uploaded) {
                 deleteQuietly(key);
             }
@@ -368,11 +341,8 @@ public class S3Service {
     }
 
     private ValidatedImage validateImage(MultipartFile file) {
-
         if (file == null || file.isEmpty()) {
-            throw new InvalidFileTypeException(
-                    "Image file is empty"
-            );
+            throw new InvalidFileTypeException("Image file is empty");
         }
 
         byte[] bytes;
@@ -380,9 +350,7 @@ public class S3Service {
         try {
             bytes = file.getBytes();
         } catch (IOException e) {
-            throw new InvalidFileTypeException(
-                    "Could not read image file"
-            );
+            throw new InvalidFileTypeException("Could not read image file");
         }
 
         String detectedType = tika.detect(bytes);
@@ -392,16 +360,10 @@ public class S3Service {
             case "image/png" -> ".png";
             case "image/webp" -> ".webp";
             case "image/gif" -> ".gif";
-            default -> throw new InvalidFileTypeException(
-                    "Only JPEG, PNG, WebP and GIF images are allowed"
-            );
+            default -> throw new InvalidFileTypeException("Only JPEG, PNG, WebP and GIF images are allowed");
         };
 
-        return new ValidatedImage(
-                bytes,
-                detectedType,
-                extension
-        );
+        return new ValidatedImage(bytes, detectedType, extension);
     }
 
     private record ValidatedImage(

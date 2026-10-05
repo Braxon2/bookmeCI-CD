@@ -21,6 +21,7 @@ import AddAddon from "./pages/AddAddon";
 import AddAddonToUnit from "./pages/AddAddonToUnit";
 import AddPeriodPriceAddon from "./pages/AddPeriodpriceAddon";
 import UnitImages from "./pages/UnitImages";
+import AddPropertyType from "./pages/AddPropertyType";
 function App() {
   return (
     <BrowserRouter>
@@ -67,6 +68,7 @@ function App() {
         />
 
         <Route path="/addons" element={<AddAddon />} />
+        <Route path="/property-types" element={<AddPropertyType />} />
 
         <Route path="/profile" element={<UserProfile />} />
       </Routes>

@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record ReviewRequestDTO(
+
         @Min(value = 1, message = "Rating must be at least 1")
         @Max(value = 5, message = "Rating must be at most 5")
         int rating,
@@ -17,5 +18,6 @@ public record ReviewRequestDTO(
                 message = "Review cannot exceed 3000 characters"
         )
         String text
+
 ) {
 }

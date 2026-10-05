@@ -1,75 +1,79 @@
 package com.dusanbranovic.bookme.service;
 
-import com.dusanbranovic.bookme.dto.requests.FascilityRequestDTO;
 import com.dusanbranovic.bookme.dto.requests.UnitFascilityRequestDTO;
-import com.dusanbranovic.bookme.dto.responses.FascilityResponseDTO;
 import com.dusanbranovic.bookme.dto.responses.UnitFascilityResponseDTO;
 import com.dusanbranovic.bookme.exceptions.EntityAlreadyExistsExcpetion;
-import com.dusanbranovic.bookme.models.Fascillity;
 import com.dusanbranovic.bookme.models.UnitFascillity;
-import com.dusanbranovic.bookme.repository.FasiliityRepository;
 import com.dusanbranovic.bookme.repository.UnitFascilityRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UnitFascillityServiceTest {
 
-    @Mock
-    private UnitFascilityRepository unitFascilityRepository;
+    @Mock private UnitFascilityRepository unitFascilityRepository;
+    @InjectMocks private UnitFascillityService unitFascillityService;
 
-    @InjectMocks
-    private UnitFascillityService unitFascillityService;
-
-    private UnitFascillity kitchen;
-    private UnitFascillity privateBathroom;
-    private UnitFascilityRequestDTO kitchenDTO;
-
-    @BeforeEach
-    void setUp() {
-        privateBathroom = new UnitFascillity("Private Bathroom");
-        privateBathroom.setId(1L);
-
-        kitchen = new UnitFascillity("Kitchen");
-        kitchen.setId(2L);
-
-        kitchenDTO = new UnitFascilityRequestDTO("Kitchen");
-    }
     @Test
-    void addUnitFascility() {
-        when(unitFascilityRepository.findByName(kitchen.getName())).thenReturn(Optional.empty());;
-        UnitFascilityResponseDTO savedUnitFascility = unitFascillityService.addUnitFascility(kitchenDTO);
-        assertNotNull(savedUnitFascility);
-        assertEquals(kitchen.getName(),savedUnitFascility.name());
+    void addUnitFacilityPersistsAndReturnsANewFacility() {
+        when(unitFascilityRepository.findByName("Kitchen")).thenReturn(Optional.empty());
+        when(unitFascilityRepository.save(any(UnitFascillity.class))).thenAnswer(invocation -> {
+            UnitFascillity saved = invocation.getArgument(0);
+            saved.setId(6L);
+            return saved;
+        });
+
+        UnitFascilityResponseDTO result = unitFascillityService.addUnitFascility(
+                new UnitFascilityRequestDTO("Kitchen")
+        );
+
+        assertEquals(6L, result.id());
+        assertEquals("Kitchen", result.name());
+        ArgumentCaptor<UnitFascillity> captor = ArgumentCaptor.forClass(UnitFascillity.class);
+        verify(unitFascilityRepository).save(captor.capture());
+        assertEquals("Kitchen", captor.getValue().getName());
     }
 
     @Test
-    void addUnitFascility_ThrowsEntityAlreadyExistEception() {
-        when(unitFascilityRepository.findByName(kitchenDTO.name())).thenReturn(Optional.of(kitchen));;
-        assertThrows(EntityAlreadyExistsExcpetion.class,() ->unitFascillityService.addUnitFascility(kitchenDTO));
+    void addUnitFacilityRejectsADuplicateName() {
+        when(unitFascilityRepository.findByName("Kitchen"))
+                .thenReturn(Optional.of(new UnitFascillity("Kitchen")));
+
+        assertThrows(
+                EntityAlreadyExistsExcpetion.class,
+                () -> unitFascillityService.addUnitFascility(new UnitFascilityRequestDTO("Kitchen"))
+        );
+        verify(unitFascilityRepository, never()).save(any());
     }
 
     @Test
-    void getUnitFasilities() {
-        List<UnitFascillity> fascillities = Arrays.asList(kitchen, privateBathroom);
-        when(unitFascilityRepository.findAll()).thenReturn(fascillities);
+    void getUnitFacilitiesMapsAllStoredFacilities() {
+        UnitFascillity kitchen = new UnitFascillity("Kitchen");
+        kitchen.setId(1L);
+        UnitFascillity bathroom = new UnitFascillity("Private bathroom");
+        bathroom.setId(2L);
+        when(unitFascilityRepository.findAll()).thenReturn(List.of(kitchen, bathroom));
 
-        List<UnitFascilityResponseDTO> results = unitFascillityService.getUnitFasilities();
+        List<UnitFascilityResponseDTO> result = unitFascillityService.getUnitFasilities();
 
-        assertNotNull(results);
-        assertEquals(2, results.size());
+        assertEquals(
+                List.of("Kitchen", "Private bathroom"),
+                result.stream().map(UnitFascilityResponseDTO::name).toList()
+        );
+        assertEquals(List.of(1L, 2L), result.stream().map(UnitFascilityResponseDTO::id).toList());
     }
 }
