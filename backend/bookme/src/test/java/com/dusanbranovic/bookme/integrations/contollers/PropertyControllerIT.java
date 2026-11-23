@@ -17,9 +17,12 @@ import com.dusanbranovic.bookme.repository.PropertyTypeRepository;
 import com.dusanbranovic.bookme.repository.UserRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -49,6 +52,9 @@ class PropertyControllerIT {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private EntityManager entityManager;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -190,11 +196,12 @@ class PropertyControllerIT {
                 .andExpect(jsonPath("$.totalElements").value(1));
     }
 
-    @Test
-    @DisplayName("POST /api/properties/{id}/add-unit persists a valid unit")
-    void addUnitPersistsValidUnit() throws Exception {
+    @ParameterizedTest
+    @ValueSource(ints = {1, 3, 7})
+    @DisplayName("POST /api/properties/{id}/add-unit persists the requested inventory count")
+    void addUnitPersistsValidUnit(int totalUnits) throws Exception {
         BookableUnitRequestDTO request = new BookableUnitRequestDTO(
-                4, 36.5, 2, 2, 1, 3, 1, "Deluxe river room"
+                4, 36.5, totalUnits, 2, 1, 3, 1, "Deluxe river room"
         );
 
         MvcResult mvcResult = mockMvc.perform(post(
@@ -211,10 +218,13 @@ class PropertyControllerIT {
 
         JsonNode response = objectMapper.readTree(mvcResult.getResponse().getContentAsString());
         UUID unitPublicId = UUID.fromString(response.get("id").asText());
+        entityManager.flush();
+        entityManager.clear();
         BookableUnit createdUnit = bookableUnitRepository.findByPublicId(unitPublicId).orElseThrow();
 
         assertEquals(existingProperty.getId(), createdUnit.getProperty().getId());
         assertEquals("Deluxe river room", createdUnit.getName());
+        assertEquals(totalUnits, createdUnit.getTotalUnits());
     }
 
     @Test

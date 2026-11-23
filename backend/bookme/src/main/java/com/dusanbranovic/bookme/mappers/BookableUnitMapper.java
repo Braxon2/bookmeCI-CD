@@ -47,6 +47,7 @@ public class BookableUnitMapper {
     public BookableUnit toEntity(BookableUnitRequestDTO dto, Property property){
         BookableUnit unit = new BookableUnit();
         unit.setProperty(property);
+        unit.setTotalUnits(dto.totalUnits());
         unit.setName(dto.name());
         unit.setMaxCapacity(dto.maxCapacity());
         unit.setMaxKidsCapacity(dto.maxKidsCapacity());
