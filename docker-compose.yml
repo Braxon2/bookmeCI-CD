@@ -3,9 +3,14 @@ services:
     image: postgres:18-alpine
     container_name: bookme-db
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-bookme}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     ports:
       - "5432:5432"
     volumes:
@@ -20,24 +25,36 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: ${DB_URL}
+      SPRING_DATASOURCE_URL: ${DB_URL:-jdbc:postgresql://db:5432/${POSTGRES_DB:-bookme}}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      aws.s3.bucketName: ${AWS_S3_BUCKET_NAME}
-      aws.s3.region: ${AWS_S3_REGION}
-      aws.accessKeyId: ${AWS_ACCESS_KEY_ID}
-      aws.secretKey: ${AWS_SECRET_ACCESS_KEY}
-      ratingLimit.tokenInBucket: ${RATINGLIMIT_TOKENINBUCKET}
-      ratingLimit.duration: ${RATINGLIMIT_DURATION}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in .env}
+      AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME:-bookme-app-storage}
+      AWS_S3_REGION: ${AWS_S3_REGION:-eu-north-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      APP_STORAGE_PREFIX: ${APP_STORAGE_PREFIX:-dev}
+      AWS_S3_PRESIGNED_URL_DURATION_MINUTES: ${AWS_S3_PRESIGNED_URL_DURATION_MINUTES:-30}
+      ratingLimit.tokenInBucket: ${RATINGLIMIT_TOKENINBUCKET:-10}
+      ratingLimit.duration: ${RATINGLIMIT_DURATION:-1}
+      AI_CHAT_PROVIDER: ${AI_CHAT_PROVIDER:-none}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
+      AI_MAX_OUTPUT_TOKENS: ${AI_MAX_OUTPUT_TOKENS:-512}
+      AI_TIMEOUT_MS: ${AI_TIMEOUT_MS:-20000}
     networks:
       - bookme-network
 
   frontend:
     build:
       context: ./frontend
+      args:
+        VITE_API_URL: ""
     container_name: bookme-frontend
     ports:
       - "80:80"

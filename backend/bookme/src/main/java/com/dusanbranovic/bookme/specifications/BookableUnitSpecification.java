@@ -45,7 +45,7 @@ public class BookableUnitSpecification {
 
     public static Specification<BookableUnit> hasPropertyFacilities(List<Long> facilityIds) {
         return (root, query, cb) -> {
-            if (facilityIds == null || facilityIds.isEmpty()) return null; // Ignored if no facilities passed
+            if (facilityIds == null || facilityIds.isEmpty()) return null;
 
             Predicate predicate = cb.conjunction();
             for (Long facId : facilityIds) {

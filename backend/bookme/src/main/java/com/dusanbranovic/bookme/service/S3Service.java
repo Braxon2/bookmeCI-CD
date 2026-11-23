@@ -194,14 +194,8 @@ public class S3Service {
                 ));
 
 
-        if (!propertyForAuthorization
-                .getOwner()
-                .getEmail()
-                .equals(email)) {
-
-            throw new AccessDeniedException(
-                    "You cannot upload images to this property"
-            );
+        if (!propertyForAuthorization.getOwner().getEmail().equals(email)) {
+            throw new AccessDeniedException("You cannot upload images to this property");
         }
 
         ValidatedImage validatedImage = validateImage(file);
@@ -240,36 +234,21 @@ public class S3Service {
                                         + " not found"
                         ));
 
-                if (!property
-                        .getOwner()
-                        .getEmail()
-                        .equals(email)) {
-
-                    throw new AccessDeniedException(
-                            "You cannot upload images to this property"
-                    );
+                if (!property.getOwner().getEmail().equals(email)) {
+                    throw new AccessDeniedException("You cannot upload images to this property");
                 }
 
-                int currentMaximumOrder =
-                        propertyImageRepository.findMaximumSortOrder(
-                                property.getId()
-                        );
+                int currentMaximumOrder = propertyImageRepository.findMaximumSortOrder(property.getId());
 
                 PropertyImage propertyImage = new PropertyImage();
 
                 propertyImage.setProperty(property);
                 propertyImage.setS3Key(key);
-                propertyImage.setContentType(
-                        validatedImage.contentType()
-                );
+                propertyImage.setContentType(validatedImage.contentType());
 
-                propertyImage.setSortOrder(
-                        currentMaximumOrder + 1
-                );
+                propertyImage.setSortOrder(currentMaximumOrder + 1);
 
-                propertyImage.setPrimary(
-                        currentMaximumOrder == 0
-                );
+                propertyImage.setPrimary(currentMaximumOrder == 0);
 
                 return propertyImageRepository.saveAndFlush(
                         propertyImage
@@ -277,9 +256,7 @@ public class S3Service {
             });
 
             if (savedImage == null) {
-                throw new IllegalStateException(
-                        "Database transaction returned no image"
-                );
+                throw new IllegalStateException("Database transaction returned no image");
             }
 
             return new ImageResponseDTO(
@@ -290,32 +267,14 @@ public class S3Service {
             );
 
         } catch (S3Exception | SdkClientException e) {
-
             deleteQuietly(key);
-
-            log.error(
-                    "S3 operation failed for property {} and key {}",
-                    propertyPublicId,
-                    key,
-                    e
-            );
-
-            throw new S3UploadException(
-                    "Cloud storage operation failed"
-            );
-
+            log.error("S3 operation failed for property {} and key {}", propertyPublicId, key, e);
+            throw new S3UploadException("Cloud storage operation failed");
         } catch (RuntimeException e) {
             if (uploaded) {
                 deleteQuietly(key);
             }
-
-            log.error(
-                    "Image persistence failed for property {} and key {}",
-                    propertyPublicId,
-                    key,
-                    e
-            );
-
+            log.error("Image persistence failed for property {} and key {}", propertyPublicId, key, e);
             throw e;
         }
     }
@@ -332,11 +291,7 @@ public class S3Service {
              * Log the exact key so it can be removed manually
              * or by a future cleanup job.
              */
-            log.error(
-                    "Failed to clean up S3 object with key {}",
-                    key,
-                    cleanupException
-            );
+            log.error("Failed to clean up S3 object with key {}", key, cleanupException);
         }
     }
 
@@ -362,7 +317,6 @@ public class S3Service {
             case "image/gif" -> ".gif";
             default -> throw new InvalidFileTypeException("Only JPEG, PNG, WebP and GIF images are allowed");
         };
-
         return new ValidatedImage(bytes, detectedType, extension);
     }
 

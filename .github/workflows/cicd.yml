@@ -1,156 +1,154 @@
 name: Bookme CI/CD
 
-
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
+# Serialize workflows for each branch; do not interrupt a running deployment.
+concurrency:
+  group: bookme-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
+  configuration-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Validate Compose and deployment script
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-only-password
+          JWT_SECRET_KEY: MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA=
+        run: |
+          docker compose --env-file .env.example -f docker-compose.yml config --quiet
+          docker compose --env-file .env.example -f docker-compose.prod.yml config --quiet
+          bash -n scripts/deploy.sh
+          bash scripts/test-deploy.sh
+
   backend-build-test:
     runs-on: ubuntu-latest
     services:
       postgres:
         image: postgres:18-alpine
         env:
-          POSTGRES_DB: bookme
-          POSTGRES_USER: ${{ secrets.DB_USERNAME }}
-          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_DB: bookme-test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgresql
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
+          --health-cmd "pg_isready -U postgres -d bookme-test"
+          --health-interval 5s
           --health-timeout 5s
-          --health-retries 5
-
+          --health-retries 20
     steps:
-      - uses: actions/checkout@v4
-
+      - uses: actions/checkout@v7
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           java-version: "21"
-          distribution: "temurin"
-          cache: "maven"
-
-      - name: Build and Test Backend
+          distribution: temurin
+          cache: maven
+          cache-dependency-path: backend/bookme/pom.xml
+      - name: Build and test backend (including PostgreSQL integration tests)
         working-directory: ./backend/bookme
-
         env:
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/bookme
-          SPRING_DATASOURCE_USERNAME: ${{ secrets.DB_USERNAME }}
-          SPRING_DATASOURCE_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_S3_REGION: ${{ secrets.AWS_S3_REGION }}
-          AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME }}
-        run: mvn clean install -DskipTests
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/bookme-test
+          SPRING_DATASOURCE_USERNAME: postgres
+          SPRING_DATASOURCE_PASSWORD: postgresql
+          AI_CHAT_PROVIDER: none
+          AWS_ACCESS_KEY_ID: ci-dummy-key
+          AWS_SECRET_ACCESS_KEY: ci-dummy-secret
+          AWS_EC2_METADATA_DISABLED: "true"
+        run: mvn -B clean verify
 
   frontend-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
+      - uses: actions/checkout@v7
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: "./frontend/package-lock.json"
-
-      - name: Install and Build
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: ./frontend/package-lock.json
+      - name: Install, test and build
         working-directory: ./frontend
+        env:
+          VITE_API_URL: ""
         run: |
           npm ci
+          node --test src/utils/unitSearchFilters.test.js
           npm run build
 
   docker-publish:
-    needs: [backend-build-test, frontend-build]
+    needs: [configuration-check, backend-build-test, frontend-build]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-
+    env:
+      IMAGE_NAMESPACE: ${{ secrets.DOCKERHUB_USERNAME || 'braxon2' }}
     steps:
-      - uses: actions/checkout@v4
-
+      - uses: actions/checkout@v7
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build and Push Backend Image
-        uses: docker/build-push-action@v5
+      - name: Build backend image (publish only on main push)
+        uses: docker/build-push-action@v7
         with:
           context: ./backend/bookme
-          push: true
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/bookme-backend:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/bookme-backend:${{ github.sha }}
-
-      - name: Build and Push Frontend Image
-        uses: docker/build-push-action@v5
+            ${{ env.IMAGE_NAMESPACE }}/bookme-backend:latest
+            ${{ env.IMAGE_NAMESPACE }}/bookme-backend:${{ github.sha }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+      - name: Build frontend image (publish only on main push)
+        uses: docker/build-push-action@v7
         with:
           context: ./frontend
-          push: true
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          build-args: VITE_API_URL=
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/bookme-frontend:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/bookme-frontend:${{ github.sha }}
+            ${{ env.IMAGE_NAMESPACE }}/bookme-frontend:latest
+            ${{ env.IMAGE_NAMESPACE }}/bookme-frontend:${{ github.sha }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
 
   deploy-to-ec2:
     needs: docker-publish
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Copy Compose file to EC2
+      - uses: actions/checkout@v7
+      - name: Copy Compose file and deployment script to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "docker-compose.prod.yml"
-          target: "/home/ubuntu/bookme/"
-
-      - name: Deploy, Health Check, and Auto-Rollback
+          source: docker-compose.prod.yml,scripts/deploy.sh
+          target: /home/ubuntu/bookme/
+      - name: Deploy exact images, check health and roll back on failure
         uses: appleboy/ssh-action@v1.0.3
         env:
           CURRENT_SHA: ${{ github.sha }}
-          PREVIOUS_SHA: ${{ github.event.before }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: CURRENT_SHA,PREVIOUS_SHA
+          envs: CURRENT_SHA,DOCKERHUB_USERNAME
+          command_timeout: 15m
           script: |
+            set -e
             cd /home/ubuntu/bookme
-            
-            echo "Deploying version: $CURRENT_SHA"
-            sudo env APP_VERSION=$CURRENT_SHA docker compose -f docker-compose.prod.yml pull
-            sudo env APP_VERSION=$CURRENT_SHA docker compose -f docker-compose.prod.yml up -d --remove-orphans
-            
-            echo "Waiting 15 seconds for Spring Boot startup..."
-            sleep 15
-            
-            HEALTH_OK=false
-            for i in $(seq 1 10); do
-              if curl -sf http://localhost:8080/api/health > /dev/null; then
-                HEALTH_OK=true
-                echo "Health check passed! Deployment successful."
-                break
-              fi
-              echo "Attempt $i failed, retrying in 5 seconds..."
-              sleep 5
-            done
-            
-            if [ "$HEALTH_OK" = false ]; then
-              echo "Health check failed! Initiating automated rollback to $PREVIOUS_SHA..."
-              sudo env APP_VERSION=$PREVIOUS_SHA docker compose -f docker-compose.prod.yml pull
-              sudo env APP_VERSION=$PREVIOUS_SHA docker compose -f docker-compose.prod.yml up -d --remove-orphans
-            
-              echo "Rollback complete. Marking build as failed."
-              exit 1 
-            fi
+            bash scripts/deploy.sh

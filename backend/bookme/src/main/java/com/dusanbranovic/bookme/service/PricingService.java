@@ -10,10 +10,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.List;
 
-/**
- * Calculates stay prices one night at a time. When price periods overlap,
- * the most recently persisted period (the one with the greatest ID) wins.
- */
 @Service
 public class PricingService {
 

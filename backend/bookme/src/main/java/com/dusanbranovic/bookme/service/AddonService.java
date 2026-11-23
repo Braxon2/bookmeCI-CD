@@ -250,12 +250,7 @@ public class AddonService {
             Long addonId
     ) {
 
-        AddonMapping mapping =
-                addonMappingRepository
-                        .findActiveByAddonAndUnit(
-                                unitId,
-                                addonId
-                        )
+        AddonMapping mapping = addonMappingRepository.findActiveByAddonAndUnit(unitId, addonId)
                         .orElseThrow(() ->
                                 new EntityNotFoundException(
                                         "Active addon with id "

@@ -4,8 +4,7 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
-# Application properties
-/src/main/resources/application.properties
+# application.properties contains environment placeholders and is versioned.
 
 ### STS ###
 .apt_generated

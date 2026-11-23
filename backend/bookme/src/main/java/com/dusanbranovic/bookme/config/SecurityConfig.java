@@ -41,6 +41,8 @@ public class SecurityConfig {
 
                         .requestMatchers("/error").permitAll()
 
+                        .requestMatchers(HttpMethod.POST, "/api/ai/unit-search").hasAnyAuthority("ADMIN", "OWNER", "USER")
+
                         .requestMatchers(HttpMethod.GET, "/api/properties/**").hasAnyAuthority("ADMIN","OWNER","USER")
 
 

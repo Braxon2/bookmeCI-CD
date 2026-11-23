@@ -30,6 +30,15 @@
 .filter-panel-heading h2 { margin: 0; font-size: 1.3rem; }
 .filter-panel-heading button { padding: 0; border: 0; background: transparent; color: var(--filter-blue); font: inherit; font-size: 0.72rem; font-weight: 800; cursor: pointer; }
 .filter-group { padding: 19px 20px; border-bottom: 1px solid var(--filter-border); }
+.smart-unit-filters { display: grid; gap: 10px; padding: 20px; border-bottom: 1px solid var(--filter-border); background: #f6f9ff; }
+.smart-unit-filters > label { color: var(--filter-ink); font-size: 1rem; font-weight: 800; }
+.smart-unit-filters > p { margin: 0; color: var(--filter-muted); font-size: 0.875rem; line-height: 1.5; }
+.smart-unit-filters textarea { width: 100%; box-sizing: border-box; resize: vertical; min-height: 130px; max-height: 300px; padding: 12px; border: 1px solid #c5cfde; border-radius: 10px; color: var(--filter-ink); background: #fff; font: inherit; font-size: 1rem; line-height: 1.5; }
+.smart-unit-filters textarea:focus-visible { outline: 2px solid #94b3f7; outline-offset: 2px; }
+.smart-unit-filters button, .filtered-pagination button { padding: 11px 14px; border: 0; border-radius: 10px; background: var(--filter-blue); color: #fff; font: inherit; font-size: 0.875rem; font-weight: 750; cursor: pointer; }
+.smart-unit-filters button:disabled, .filtered-pagination button:disabled { opacity: 0.55; cursor: default; }
+.smart-unit-filters .smart-filter-error { color: #a62c2c; }
+.filtered-pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 22px; font-size: 0.875rem; }
 .filter-group > label, .filter-group h3 { display: block; margin: 0 0 12px; color: #354159; font-size: 0.77rem; font-weight: 850; }
 .filter-price-input { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid #d7deea; border-radius: 10px; background: #fafbfe; }
 .filter-price-input span { color: var(--filter-muted); font-size: 0.85rem; }

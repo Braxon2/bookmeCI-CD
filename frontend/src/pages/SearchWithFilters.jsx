@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import BookableUnitCard from "../components/BookableUnitCard";
 import GuestDropdown from "../components/GuestDropdown";
+import SmartUnitFilters from "../components/SmartUnitFilters";
 import { useFetch } from "../hooks/useFetch";
+import { filtersToSearchParams } from "../utils/unitSearchFilters";
 import "./styles/SearchWithFilters.css";
 
 const parseIds = (value) => value ? value.split(",").map(Number).filter(Boolean) : [];
@@ -24,12 +26,14 @@ const SearchWithfilter = () => {
   const [selectedUnitFacs, setSelectedUnitFacs] = useState(parseIds(searchParams.get("unitFacilities")));
   const [units, setUnits] = useState([]);
   const [totalResults, setTotalResults] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [isSearching, setIsSearching] = useState(true);
   const [searchError, setSearchError] = useState("");
 
   const { data: propFacilities } = useFetch(`${apiURL}/api/fascilities`);
   const { data: unitFacilities } = useFetch(`${apiURL}/api/unit-fascilities`);
   const queryString = searchParams.toString();
+  const currentPage = Math.max(0, Number(searchParams.get("page")) || 0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -38,6 +42,7 @@ const SearchWithfilter = () => {
       if (!params.get("startDate") || !params.get("endDate")) {
         setUnits([]);
         setTotalResults(0);
+        setTotalPages(0);
         setIsSearching(false);
         setSearchError("Choose check-in and check-out dates to see availability.");
         return;
@@ -57,10 +62,12 @@ const SearchWithfilter = () => {
         const result = await response.json();
         setUnits(result.content || []);
         setTotalResults(result.totalElements ?? result.content?.length ?? 0);
+        setTotalPages(result.totalPages ?? 1);
       } catch (error) {
         if (error.name !== "AbortError") {
           setUnits([]);
           setTotalResults(0);
+          setTotalPages(0);
           setSearchError(error.message);
         }
       } finally {
@@ -101,6 +108,36 @@ const SearchWithfilter = () => {
     setSearchParams(createParams(false));
   };
 
+  const applySmartFilters = (filters) => {
+    setCity(filters.city);
+    setCountry(filters.country);
+    setDates([filters.startDate, filters.endDate]);
+    setAdults(filters.adults);
+    setKids(filters.kids);
+    setMaxPrice(filters.maxPrice ?? "");
+    setSelectedPropFacs(filters.propertyFacilities || []);
+    setSelectedUnitFacs(filters.unitFacilities || []);
+    setSearchParams(filtersToSearchParams(filters));
+  };
+
+  const changePage = (page) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("page", page);
+    setSearchParams(params);
+  };
+
+  const smartContext = {
+    city: city.trim() || null,
+    country: country.trim() || null,
+    checkIn: dates[0] || null,
+    checkOut: dates[1] || null,
+    adults,
+    children: kids,
+    maxTotalPrice: maxPrice === "" ? null : Number(maxPrice),
+    propertyFacilities: propFacilities?.filter((facility) => selectedPropFacs.includes(facility.id)).map((facility) => facility.name) || [],
+    unitFacilities: unitFacilities?.filter((facility) => selectedUnitFacs.includes(facility.id)).map((facility) => facility.name) || [],
+  };
+
   const filterCount = selectedPropFacs.length + selectedUnitFacs.length + (maxPrice ? 1 : 0);
   const destination = [searchParams.get("city"), searchParams.get("country")].filter(Boolean).join(", ");
 
@@ -127,6 +164,9 @@ const SearchWithfilter = () => {
               <div><span>Refine results</span><h2>Filters</h2></div>
               {filterCount > 0 && <button type="button" onClick={clearFilters}>Clear {filterCount}</button>}
             </div>
+
+            <SmartUnitFilters apiURL={apiURL} context={smartContext}
+              catalogReady={Array.isArray(propFacilities) && Array.isArray(unitFacilities)} onApply={applySmartFilters} />
 
             <div className="filter-group">
               <label htmlFor="max-price">Maximum total price</label>
@@ -175,6 +215,11 @@ const SearchWithfilter = () => {
               <BookableUnitCard key={unit.unitId} bookableUnit={unit}
                 checkIn={searchParams.get("startDate")} checkOut={searchParams.get("endDate")} />
             ))}</div>}
+            {!isSearching && !searchError && totalPages > 1 && <nav className="filtered-pagination" aria-label="Search result pages">
+              <button type="button" disabled={currentPage === 0} onClick={() => changePage(currentPage - 1)}>Previous</button>
+              <span>Page {currentPage + 1} of {totalPages}</span>
+              <button type="button" disabled={currentPage >= totalPages - 1} onClick={() => changePage(currentPage + 1)}>Next</button>
+            </nav>}
           </section>
         </div>
       </div>

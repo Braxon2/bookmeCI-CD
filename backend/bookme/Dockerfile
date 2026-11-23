@@ -12,10 +12,11 @@ COPY pom.xml .
 RUN mvn dependency:go-offline -B
 
 
-COPY src ./src
+COPY src/main ./src/main
 
 
-RUN mvn clean package -DskipTests -B
+# CI already runs the full test suite before images are built.
+RUN mvn clean package -Dmaven.test.skip=true -B
 
 
 FROM eclipse-temurin:21-jre-alpine

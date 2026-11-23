@@ -151,7 +151,7 @@ public class BookableUnitService {
                         unit.getProperty().getCountry(), imageUrl,
                         unit.getSingleBeds(), unit.getDoubleBeds(), totalPrice
                 ));
-            } catch (Exception e) {
+            } catch (EntityNotFoundException e) {
                 log.warn("Skipping unit {} from search due to pricing error: {}", unit.getId(), e.getMessage());
             }
         }

@@ -1,5 +1,6 @@
 # BookMe — Backend Service
 
+
 > A robust, scalable booking platform backend inspired by Booking.com.
 
 BookMe serves as the core engine for property management, allowing hosts to list accommodations with complex seasonal pricing logic and enabling users to browse and reserve stays. The system is designed with a focus on security, data integrity, and high-performance media handling.
